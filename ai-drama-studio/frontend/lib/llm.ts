@@ -21,7 +21,7 @@ async function callLLM(messages: any[], opts: any = {}) {
 export async function planDrama(title: string, description: string = '', existingContext: any = null): Promise<any> {
   const msgs: any[] = [{ role: 'system', content: SYSTEM_PROMPT }];
   if (existingContext) msgs.push({ role: 'user', content: 'Current context: ' + JSON.stringify(existingContext) });
-  msgs.push({ role: 'user', content: \Create a complete drama plan for: '\'\\nDescription: \\\n\\nOutput valid JSON with these fields: synopsis (one paragraph), genre, tone, total_episodes (6-12), episode_duration_seconds (30-60), characters (array: name, role, age, personality, appearance, costume_style), episodes (array: number, title, summary, key_scenes). Be detailed and creative.\ });
+  msgs.push({ role: 'user', content: `Create a complete drama plan for: '${title}'\nDescription: ${description || 'No additional description'}\n\nOutput valid JSON with these fields: synopsis (one paragraph), genre, tone, total_episodes (6-12), episode_duration_seconds (30-60), characters (array: name, role, age, personality, appearance, costume_style), episodes (array: number, title, summary, key_scenes). Be detailed and creative.` });
   const text = await callLLM(msgs, { response_format: { type: 'json_object' }, temperature: 0.7 });
   return JSON.parse(text);
 }
@@ -37,7 +37,7 @@ export async function chatWithPlanner(projectContext: any, userMessage: string):
 export async function generateStoryboard(episodeData: any, characters: any[]): Promise<any> {
   const msgs: any[] = [
     { role: 'system', content: 'You are a professional storyboard artist for AI video generation.' },
-    { role: 'user', content: \Generate detailed storyboard shots for episode: \\\nSummary: \\\nCharacters: \\\n\\nOutput valid JSON with a \"shots\" array. Each shot has: shot_number, type (establishing/medium/close-up), camera (fixed/push-in/pan/track), description (detailed visual description for AI image generation), dialogue, duration_seconds, mood, lighting, composition.\ }
+    { role: 'user', content: `Generate detailed storyboard shots for episode: ${episodeData?.title || 'Untitled'}\nSummary: ${episodeData?.summary || ''}\nCharacters: ${JSON.stringify(characters)}\n\nOutput valid JSON with a "shots" array. Each shot has: shot_number, type (establishing/medium/close-up), camera (fixed/push-in/pan/track), description (detailed visual description for AI image generation), dialogue, duration_seconds, mood, lighting, composition.` }
   ];
   const text = await callLLM(msgs, { response_format: { type: 'json_object' }, temperature: 0.5 });
   return JSON.parse(text);

@@ -5,7 +5,7 @@ interface Message {
   content: string
 }
 
-export default function ChatDialog({ projectId, onProjectUpdate }) {
+export default function ChatDialog({ projectId, onProjectUpdate }: { projectId: string; onProjectUpdate: (updatedProject?: any) => void }) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)

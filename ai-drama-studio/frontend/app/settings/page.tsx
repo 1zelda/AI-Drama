@@ -77,7 +77,7 @@ export default function SettingsPage() {
   const field = (label: string, key: keyof Settings, type: string, placeholder: string, help?: string) => (
     <div style={{ marginBottom: "1rem" }}>
       <label style={{ display: "block", marginBottom: "0.35rem", color: "#aaa", fontSize: "0.85rem" }}>{label}</label>
-      <input type={type} value={s[key]} onChange={e => update(key, e.target.value)} placeholder={placeholder}
+      <input type={type} value={String(s[key] ?? "")} onChange={e => update(key, e.target.value)} placeholder={placeholder}
         style={{ width: "100%", padding: "0.75rem", background: "#141414", border: "1px solid #2a2a2a", borderRadius: 8, color: "#fff", fontSize: "0.9rem", outline: "none", boxSizing: "border-box" }} />
       {help && <p style={{ margin: "0.25rem 0 0", fontSize: "0.75rem", color: "#555" }}>{help}</p>}
     </div>

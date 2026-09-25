@@ -9,14 +9,14 @@ export default function ProjectPage() {
   const router = useRouter()
   const projectId = params.id as string
 
-  const [project, setProject] = useState(null)
+  const [project, setProject] = useState<any>(null)
   const [activeTab, setActiveTab] = useState("chat")
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const [approvals, setApprovals] = useState([])
+  const [approvals, setApprovals] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
-  const messagesEndRef = useRef(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadProject()
@@ -33,7 +33,7 @@ export default function ProjectPage() {
       const data = await res.json()
       setProject(data)
       if (data.plan?.synopsis) {
-        const chars = (data.plan.characters || []).map(c => c.name).join(", ")
+        const chars = (data.plan.characters || []).map((c: any) => c.name).join(", ")
         const eps = data.plan.episodes?.length || 0
         setMessages([{ role: "assistant", content: `Plan complete for "${data.title}"!\n\n${data.plan.synopsis}\n\nCharacters: ${chars}\nEpisodes: ${eps}\n\nHow would you like to proceed?` }])
       }
@@ -83,7 +83,7 @@ export default function ProjectPage() {
     }
   }
 
-  const handleApprove = async (itemId) => {
+  const handleApprove = async (itemId: string) => {
     await fetch(`/api/projects/${projectId}/approvals/${itemId}/action`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -92,7 +92,7 @@ export default function ProjectPage() {
     loadApprovals()
   }
 
-  const handleReject = async (itemId, feedback) => {
+  const handleReject = async (itemId: string, feedback: string) => {
     await fetch(`/api/projects/${projectId}/approvals/${itemId}/action`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -184,8 +184,16 @@ export default function ProjectPage() {
   )
 }
 
-function ChatPanel({ messages, input, setInput, loading, generating, onSend, onPlan }) {
-  const messagesEndRef = useRef(null)
+function ChatPanel({ messages, input, setInput, loading, generating, onSend, onPlan }: {
+  messages: { role: string; content: string }[]
+  input: string
+  setInput: (v: string) => void
+  loading: boolean
+  generating: boolean
+  onSend: () => void
+  onPlan: () => void
+}) {
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages])
 
   return (
@@ -250,8 +258,13 @@ function ChatPanel({ messages, input, setInput, loading, generating, onSend, onP
   )
 }
 
-function BoardPanel({ approvals, onApprove, onReject, onGenerate }) {
-  const [feedback, setFeedback] = useState({})
+function BoardPanel({ approvals, onApprove, onReject, onGenerate }: {
+  approvals: any[]
+  onApprove: (itemId: string) => void
+  onReject: (itemId: string, feedback: string) => void
+  onGenerate: () => void
+}) {
+  const [feedback, setFeedback] = useState<Record<string, string>>({})
   const pending = approvals.filter((a) => a.status === "pending")
   const done = approvals.filter((a) => a.status !== "pending")
 
@@ -328,7 +341,7 @@ function BoardPanel({ approvals, onApprove, onReject, onGenerate }) {
   )
 }
 
-function EditorPanel({ project }) {
+function EditorPanel({ project }: { project: any }) {
   return (
     <div style={{ textAlign: "center", padding: "4rem" }}>
       <div style={{ fontSize: "4rem", marginBottom: "1rem" }}>🎛️</div>

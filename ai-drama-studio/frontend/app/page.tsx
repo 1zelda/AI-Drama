@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Plus, Play, MessageSquare, LayoutGrid, Settings } from "lucide-react"
 
 export default function Home() {
-  const [projects, setProjects] = useState([])
+  const [projects, setProjects] = useState<any[]>([])
 
   useEffect(() => {
     fetch("/api/projects")

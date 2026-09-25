@@ -22,7 +22,7 @@ export default function NewProject() {
     { value: "thriller", label: "Thriller", emoji: "🔪" },
   ]
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
     setLoading(true)
