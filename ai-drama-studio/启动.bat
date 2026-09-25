@@ -1,40 +1,36 @@
-# AI Drama Studio 启动脚本
-Write-Host "Starting AI Drama Studio..." -ForegroundColor Green
+@echo off
+setlocal
+chcp 65001 >nul
+title AI Drama Studio
 
-# Check if backend is already running
-$existing = netstat -ano | findstr ":8013" | findstr "LISTENING"
-if ($existing) {
-    Write-Host "Server already running on port 8013" -ForegroundColor Yellow
-} else {
-    # Start the FastAPI server
-    cd "C:\Users\Administrator\Documents\ChatGPT\AI漫剧真人剧\ai-drama-studio\backend"
-    Write-Host "Starting server on port 8013..." -ForegroundColor Cyan
-    Start-Process python -ArgumentList "-m","uvicorn","app.main:app","--host","0.0.0.0","--port","8013" -WindowStyle Hidden
-    Start-Sleep -Seconds 2
-}
+rem ==== locate node (skip if already on PATH) ====
+where node >nul 2>nul || set "PATH=C:\Users\Administrator\.workbuddy\binaries\node\versions\22.22.2-3;%PATH%"
 
-# Check if Agnes proxy is running
-$agnes = netstat -ano | findstr ":57324" | findstr "LISTENING"
-if (-not $agnes) {
-    Write-Host "Starting Agnes proxy..." -ForegroundColor Cyan
-    cd "C:\Users\Administrator\Documents\ChatGPT\微博热搜  腾讯热搜等热点项目"
-    $env:AGNES_API_KEY = "sk-O3SeV8WTQ9NP6DrO0JcAXMirPrvYaI9nbzOelbqGRAe4QdrQ"
-    Start-Process node -ArgumentList "agnes-proxy.js" -WindowStyle Hidden
-    Start-Sleep -Seconds 1
-}
+rem ==== backend: FastAPI on 8013 ====
+netstat -ano | findstr ":8013 " | findstr LISTENING >nul
+if errorlevel 1 (
+    pushd "%~dp0backend"
+    echo [启动] 后端 http://localhost:8013 ...
+    start "ai-drama-backend" /min cmd /c "python -m uvicorn app.main:app --host 127.0.0.1 --port 8013"
+    popd
+) else echo [跳过] 后端已在 8013 运行
 
-# Check if Python proxy is running
-$pyproxy = netstat -ano | findstr ":57322" | findstr "LISTENING"
-if (-not $pyproxy) {
-    Write-Host "Starting Agnes Python proxy..." -ForegroundColor Cyan
-    cd "C:\Users\Administrator\Documents\ChatGPT\微博热搜  腾讯热搜等热点项目"
-    $env:AGNES_API_KEY = "sk-O3SeV8WTQ9NP6DrO0JcAXMirPrvYaI9nbzOelbqGRAe4QdrQ"
-    Start-Process python -ArgumentList "agnes-proxy.py" -WindowStyle Hidden
-    Start-Sleep -Seconds 1
-}
+rem ==== frontend: Next.js dev on 3000 ====
+netstat -ano | findstr ":3000 " | findstr LISTENING >nul
+if errorlevel 1 (
+    pushd "%~dp0frontend"
+    if not exist node_modules (
+        echo [安装] 前端依赖首次安装中，请稍候...
+        call npm install --no-audit --no-fund
+    )
+    echo [启动] 前端 http://localhost:3000 ...
+    start "ai-drama-frontend" /min cmd /c "npm run dev"
+    popd
+) else echo [跳过] 前端已在 3000 运行
 
-Write-Host ""
-Write-Host "========================================" -ForegroundColor Green
-Write-Host "AI Drama Studio is running!" -ForegroundColor Green
-Write-Host "Open http://localhost:8013 in your browser" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Green
+timeout /t 6 /nobreak >nul
+start http://localhost:3000
+echo ============================================
+echo  AI Drama Studio 已启动: http://localhost:3000
+echo ============================================
+endlocal

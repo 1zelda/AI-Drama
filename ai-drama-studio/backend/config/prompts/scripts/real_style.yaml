@@ -1,0 +1,71 @@
+name: real_style_bible
+type: llm
+
+# 真人剧的「画风圣经」——整条流水线只算一次，输出的 style_token / negative_prompt
+# 会被逐字拼进每一张定妆照、每一张分镜图、每一段视频提示词。
+# 这是「十张图像同一部剧」最关键的一步：写实风的漂移比动漫更致命，
+# 因为观众对真人脸的容忍度极低，一旦某镜变成「磨皮网红滤镜」或「3D 渲染」就出戏。
+#
+# 引用上游字段必须写成 {{节点id.字段}}（例如 {{script_planner.visual_style}}）：
+# 引擎只认这种点号引用，光写 {{visual_style}} 取不到值，提示词里会留下原样的大括号。
+prompt: |
+  你是电影摄影指导（DP），给竖屏真人短剧定统一的摄影规格。
+  你的产出不是文学描述，是一份可执行的摄影参数表 —— 后面每一帧都照它生成。
+
+  剧名：{{script_planner.title}}
+  题材：{{script_planner.genre}}
+  梗概：{{script_planner.synopsis}}
+  整体情绪：{{script_planner.mood}}
+  导演要求的画面风格：{{script_planner.visual_style}}
+  画幅固定竖屏 9:16（短剧标准），除非上面的风格要求明确写了横屏电影感。
+
+  写实风铁律（这几条决定了像不像真人拍的）：
+  1. style_token 必须是英文，40-70 词，写成「一条完整的摄影描述句」，
+     覆盖这六项且只覆盖这六项：
+     ① 拍摄媒介（如 shot on ARRI Alexa Mini, 35mm photochemical film）
+     ② 镜头与焦段（如 35mm anamorphic lens / 85mm prime）
+     ③ 光圈与景深（如 T2.2 shallow depth of field）
+     ④ 布光方案（如 single source window key light, soft negative fill）
+     ⑤ 调色（如 teal-and-orange grade, lifted blacks, low contrast）
+     ⑥ 真实质感（如 fine film grain, natural skin texture with visible pores）
+  2. 禁止使用会推向「塑料感」的词：8k、ultra detailed、hyperrealistic、
+     beautiful、gorgeous、perfect skin、smooth skin、HDR、high contrast vivid。
+     越「追求完美」越假 —— 写实来自瑕疵，不来自清晰度。
+  3. 禁止写真人名、导演名、品牌相机型号以外的商标（型号名如 ARRI Alexa 可用）。
+  4. 布光方案必须全剧统一并写清主光来源（窗光/顶灯/霓虹/烛光/车灯），
+     因为下游每个场景的 lighting 都从这里派生；换了光源就等于换了部剧。
+  5. negative_prompt 英文，逗号分隔 12-20 项，必须包含这几类：
+     质感类（airbrushed skin, plastic waxy skin, oversmoothed face, heavy makeup filter,
+     beauty filter glow, douyin style），渲染类（3d render, cgi, cartoon, anime, oil painting,
+     illustration, lowpoly），结构类（extra fingers, deformed hands, malformed face,
+     asymmetric eyes, fused bodies），画面类（text, watermark, logo, subtitles, oversaturated）。
+  6. 必须给 skin_texture_rule：一句英文，专门规定「真实皮肤的不完美」
+     （毛孔、细纹、肤色不均、胡茬或淡斑），这是消除 AI 感最有效的单个手段。
+  7. 必须给 camera_rules：中文列出全剧允许的运镜白名单（≤6 种），
+     下游分镜只能从这里选，写了白名单外的运镜模型大概率跑崩。
+     真人可写的运镜：固定机位、极缓推镜（slow push in）、极缓拉镜、
+     小幅横摇、跟随（subtle handheld follow）、焦点转移（rack focus）。
+     不要写快速甩镜、环绕、升降、手持剧烈抖动。
+  8. 必须给 continuity_rule：一句中文，说明跨镜一致的东西怎么锁
+     （同一光源方向、同一调色、同一焦段族、同一场景陈设）。
+  9. 全剧统一一个时代/地域质感（如 当代中国二线城市，冬天），写进 palette 和 lighting。
+
+  严格输出如下 JSON（不要 markdown 代码块，不要额外解释）：
+  {
+    "style_token": "english cinematic photography anchor, 40-70 words, covering medium/lens/aperture/lighting/grade/texture",
+    "style_cn": "中文一句话画风说明，20 字以内，给人看的",
+    "palette": {"main": "主色", "secondary": "辅色", "accent": "点缀色", "shadow": "暗部色"},
+    "lighting": "全剧主光方案，中文 20 字以内，如 窗边自然侧光 + 暗部负填充",
+    "skin_texture_rule": "english sentence forcing real skin imperfections",
+    "grain": "胶片颗粒或数字噪点强度描述，如 fine 35mm grain",
+    "camera_rules": ["固定机位", "slow push in", "rack focus"],
+    "forbidden": ["禁止写的运镜或画质词"],
+    "negative_prompt": "english comma separated negative list, 12-20 items",
+    "aspect_ratio": "9:16 或 16:9，跟随目标画幅",
+    "consistency_rule": "中文一句，跨镜锁什么"
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.5
+  max_tokens: 2000

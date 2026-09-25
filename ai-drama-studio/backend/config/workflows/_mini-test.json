@@ -1,0 +1,8 @@
+{
+  "name": "mini-test",
+  "nodes": {
+    "step_a": {"type": "llm", "provider": "deepseek", "output": "a"},
+    "step_b": {"type": "llm", "provider": "deepseek", "depends_on": ["step_a"], "output": "b"}
+  },
+  "execution": {"retry": 1, "timeout": 30}
+}

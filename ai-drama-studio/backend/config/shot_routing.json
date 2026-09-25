@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "_comment": "镜头类型路由表：按镜头类型自动选模型+套提示词模板+自动去水印。UI 可改（PUT /api/routing）。",
+  "global": {
+    "auto_remove_watermark": false,
+    "respect_motion_verbs": true,
+    "notes": "respect_motion_verbs=提醒层：模板已内建「一片段一动词」纪律 智谱/火山已源头传 watermark_enabled=false，本地 LaMa 二次去水印默认关闭以省时间。"
+  },
+  "shot_types": [
+    {
+      "id": "character_closeup",
+      "label": "人物特写",
+      "preferred": "zhipu",
+      "fallback": "modelscope",
+      "banned": [
+        "agnes"
+      ],
+      "watermark": "zhipu",
+      "motion_template": "固定机位，人物保持完全静止，只有{micro_action}，画面其余部分完全静止",
+      "micro_actions": [
+        "缓慢眨一次眼",
+        "嘴角微微上扬",
+        "发丝被微风轻轻吹动",
+        "轻轻点头"
+      ],
+      "banned_terms": [
+        "挥手",
+        "跳舞",
+        "转身",
+        "大幅运动",
+        "走动",
+        "跑"
+      ],
+      "notes": "真人脸/角色脸镜头禁用 agnes：人脸保持差且有水印；cogvideox-flash 正脸特写+单一微动作最稳"
+    },
+    {
+      "id": "character_action",
+      "label": "人物全身动作",
+      "preferred": "zhipu",
+      "fallback": "comfyui",
+      "banned": [
+        "agnes"
+      ],
+      "watermark": "zhipu",
+      "motion_template": "固定机位，{action}，动作幅度小而清晰，背景保持静止",
+      "micro_actions": [
+        "人物缓缓抬起手臂",
+        "人物轻轻挥动武器一次",
+        "人物慢慢坐下"
+      ],
+      "banned_terms": [
+        "复杂动作",
+        "连续多个动作",
+        "转身",
+        "跳跃"
+      ],
+      "notes": "全身动作仍是高风险项；一次只给一个动词，宁可拆多镜"
+    },
+    {
+      "id": "scene",
+      "label": "场景/环境",
+      "preferred": "agnes",
+      "fallback": "zhipu",
+      "banned": [],
+      "watermark": "agnes",
+      "motion_template": "固定机位，场景保持静止，只有{element}缓慢流动",
+      "micro_actions": [
+        "云",
+        "光粒子",
+        "水面",
+        "雾气",
+        "旗帜"
+      ],
+      "banned_terms": [
+        "人物移动",
+        "镜头大幅移动"
+      ],
+      "notes": "无人场景 agnes 免费够用，人物缺席则没有脸崩风险"
+    },
+    {
+      "id": "screen_ui",
+      "label": "屏幕/UI/道具",
+      "preferred": "local_kenburns",
+      "fallback": "zhipu",
+      "banned": [
+        "agnes"
+      ],
+      "watermark": "zhipu",
+      "motion_template": "（Ken Burns 本地生成，无需运动提示词）",
+      "micro_actions": [],
+      "banned_terms": [
+        "屏幕内容变形",
+        "UI 元素重组"
+      ],
+      "notes": "UI 镜头 AI 运动必然融化，直接静推最稳"
+    },
+    {
+      "id": "fx_transition",
+      "label": "特效/转场",
+      "preferred": "agnes",
+      "fallback": "zhipu",
+      "banned": [],
+      "watermark": "agnes",
+      "motion_template": "{effect}，无人物出现，镜头固定",
+      "micro_actions": [
+        "光芒爆发旋转",
+        "粒子四散",
+        "能量汇聚"
+      ],
+      "banned_terms": [
+        "人物"
+      ],
+      "notes": "纯特效 agnes 免费；剪影+光门这类「人物背影当剪影」也归此类（剪影无脸部细节，不算人脸镜头）"
+    }
+  ]
+}

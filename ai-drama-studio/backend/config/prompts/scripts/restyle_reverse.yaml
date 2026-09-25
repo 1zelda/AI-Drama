@@ -1,0 +1,70 @@
+name: restyle_reverse
+type: llm
+
+# 片段魔改线的第一步：**看清楚原片**，而不是急着改。
+# 这个节点走多模态通道（节点上写 images_from: input_clip，引擎会把 video_input 抽出的
+# 关键帧当图片喂给视觉模型）。它的产物是后面所有节点的公共事实：
+#   source_style / shots[] → style_bible 用来决定"哪些东西要换掉"，
+#   shots[] 的 subject/composition/positions → shot_images 重画时必须贴住。
+#
+# 为什么值得单独一步：直接把"换成印度版"和"描述原片"塞进同一个提示词，
+# 模型会跳过观察、直接编一个它想象中的原片 —— 出来的东西和源视频毫无关系，
+# 这是魔改线最常见的失败。所以这里明令禁止评价与脑补。
+#
+# 下游引用写 {{reverse_prompt.字段}}；节点 id 是 reverse_prompt。
+prompt: |
+  你是一名逆向分镜师。给你的这几张图是**同一条视频**按时间顺序抽出的关键帧
+  （不是分镜图，也不是剧照摆拍），它们来自一条已经存在的片子。
+
+  视频信息：时长 {{input_clip.duration}} 秒，原始尺寸 {{input_clip.width}}x{{input_clip.height}}。
+  用户对这条素材的说明：{{title}}
+
+  你的任务只有一个：**如实记录画面里有什么**。不要改写、不要美化、不要补剧情、
+  不要猜前后发生了什么、不要评价好坏。看不见的就不要写。
+
+  观察铁律：
+  1. 只写你在图上真实看见的东西。看不清就写"看不清"，不要编。
+  2. 每一镜必须写清**人数、每个人在画面的哪个位置、身体朝向、正在做的一个动作**。
+    下游要按这个构图重画，写错就等于换了一条片子。
+  3. 画面里任何**可读文字**（招牌、字幕、屏幕、衣服上的字）要原样抄下来，
+    并单独标进 replaceable_text，因为换世界观时这些最先露馅。
+  4. props 是"这一镜里的物件清单"，逐项列，越具体越好（木质办公桌/不锈钢保温杯/
+    白色壁挂空调）。魔改的本质就是替换 props，列不出来就没得换。
+  5. 摄影层面必须记录：机位高度与角度、景别、光从哪来、主色是什么、背景虚实。
+  6. 服装与人物外观（年龄感/性别呈现/发型/体型）如实记录，不做价值判断。
+  7. 帧数可能少于真实镜头数。按给你的图逐帧编号（从 0 开始），不要虚构额外镜头。
+  8. 最后两栏是给机器用的，不是给人看的：image_prompt 用**英文**只写这一帧画面里
+     看得见的东西（谁、站哪、做什么、机位景别、背景），不带任何风格词与画质词，
+     因为下游会自己拼目标风格；video_prompt 用**英文**写这一镜内的一个动作加一个
+     镜头运动，动作必须是原片已经有的那个，不许发明新动作。
+
+  只输出一个 JSON 对象，不要 markdown 代码块：
+  {
+    "source_logline": "一句话说清画面上正在发生什么（只说看得见的）",
+    "source_style": "原片的视觉风格：介质感、调色、布光、镜头语言，中文 60-100 字",
+    "source_era_region": "原片看起来的时代与地域，以及判断依据（服装/车辆/画质/文字）",
+    "people": [{"id": "人物A", "appearance": "外观与服装", "position": "在画面里的位置"}],
+    "replaceable_text": ["画面里出现的具体文字，逐条抄下来"],
+    "shots": [
+      {
+        "index": 0,
+        "time": "第几张帧（原样保留数字）",
+        "location": "什么空间，室内/室外，看得见陈设",
+        "subject": "画面主体是谁/是什么",
+        "blocking": "每个人站在哪、朝向哪、和谁相对",
+        "action": "正在做的那一个动作（动词开头，只写一个）",
+        "camera": "机位高度+角度+景别（如：齐胸高度平视，中近景）",
+        "lighting": "光从哪来、什么性质、色温倾向",
+        "color": "这一镜统治画面的 2-3 个颜色",
+        "wardrobe": "在场人物的服装与妆发",
+        "props": ["这一镜里看得见的具体物件，逐项"],
+        "background": "背景里有什么、虚实如何",
+        "compose_note": "构图特征（对称/三分/框中框/前景遮挡），一句话",
+        "dialogue_hint": "看得出在说话就说'谁在说话、口型开合程度'；否则写'无对白'",
+        "image_prompt": "English 25-40 words: only what is visible in this frame (who, where they stand, what they do, camera height, shot size, background). No style words, no quality words.",
+        "video_prompt": "English 15-25 words: the one action already happening in this frame plus one camera move. Do not invent actions."
+      }
+    ],
+    "audio_note": "从画面能推断的声音情况（有无说话人特写、乐器、运动），不要臆造对白",
+    "what_makes_it_what_it_is": ["去掉这些就不像原片了的关键视觉元素，3-5 条"]
+  }

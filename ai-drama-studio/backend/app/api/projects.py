@@ -36,6 +36,8 @@ def _get_char_manager(project_id: str) -> CharacterManager:
 @router.post("/")
 async def create_project(req: ProjectCreate):
     project = _get_store().create(req.title, req.description or "")
+    if req.genre:
+        project = _get_store().update(project.id, genre=req.genre) or project
     return project.to_dict()
 
 
@@ -60,6 +62,18 @@ async def update_project(project_id: str, req: ProjectUpdate):
     updates = req.model_dump(exclude_unset=True)
     updated = _get_store().update(project_id, **updates)
     return updated.to_dict()
+
+
+@router.delete("/{project_id}")
+async def delete_project(project_id: str):
+    project = _get_store().get(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    _get_store().delete(project_id)
+    # 连带清掉该项目的审批/角色缓存，避免后续新建同名项目读到脏数据
+    _approvals.pop(project_id, None)
+    _char_managers.pop(project_id, None)
+    return {"deleted": project_id}
 
 
 @router.post("/{project_id}/plan")

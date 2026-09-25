@@ -6,11 +6,13 @@ from typing import List, Optional, Any, Dict
 class ProjectCreate(BaseModel):
     title: str
     description: Optional[str] = ""
+    genre: Optional[str] = ""
 
 
 class ProjectUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    genre: Optional[str] = None
     plan: Optional[dict] = None
     characters: Optional[List[dict]] = None
     episodes: Optional[List[dict]] = None

@@ -1,30 +1,58 @@
 name: storyboard_generator
 type: llm
 
+# 分镜是整条流水线的枢纽：
+#   subtitle      → 直接当字幕烧进画面，同时送给 TTS 当配音文本
+#   image_prompt  → 生图（首帧）
+#   video_prompt  → 生视频（必须只有一个运动动词，否则画面必融化）
+# 三个字段各司其职，不要互相混用。
 prompt: |
-  Based on the following episode content, generate detailed storyboard:
-  
-  Episode: {{episode_title}}
-  Story: {{episode_summary}}
-  Characters: {{characters}}
-  Scenes: {{scenes}}
-  
-  Please output JSON format:
+  你是短剧分镜师。把下面的故事拆成 {{shots}} 个镜头，每个镜头 5 秒。
+
+  剧名：{{script_planner.title}}
+  故事梗概：{{script_planner.synopsis}}
+  开篇钩子：{{script_planner.hook}}
+  反转：{{script_planner.twist}}
+  结尾：{{script_planner.ending}}
+  角色：{{character_generator.characters}}
+  场景：{{scene_generator.scenes}}
+  画面风格：{{script_planner.visual_style}}
+
+  分镜铁律（违反会导致画面崩坏，务必遵守）：
+  1. 每个镜头只做一件事，只给一个运动动词。禁止「一边…一边…」「然后…接着…」。
+  2. 人物镜头优先「固定机位 + 微动作」：眨眼、嘴角上扬、呼吸起伏、缓慢抬手。
+     大幅动作（转身、奔跑、跳跃）一律禁止，当前模型必融化。
+  3. subtitle 是这一镜的字幕兼配音文本：必须是完整的中文口语短句，12-24 字，
+     能独立听懂，可以直接朗读。不要写镜头说明，不要写括号注释。
+     旁白镜头就写旁白内容，对白镜头就写「角色名：台词」。
+  4. image_prompt 用英文，结构固定为：角色形象锚点 + 动作状态 + 场景空景 + 机位 + 风格画质。
+     角色形象锚点**必须逐字复制**上面 characters 里对应角色的 image_prompt 原文（不要改写、
+     不要省略），这是跨镜头人物长相一致的关键；场景部分同样照抄 scenes 里的 image_prompt。
+  5. video_prompt 用英文，只写：机位固定 + 一个具体微动作 + 背景静止 + 时长感。
+     开头必须写 "static camera"。
+  6. shot_type 只能从下面三个值里**选一个填**，不要照抄整行：
+     character_closeup（人物面部特写）、character_action（人物身体动作）、scene（无人物空景）。
+  7. 镜头顺序要能独立讲完一个起承转合，第一镜就把观众抓住。
+  8. characters 写本镜出现的角色名（用上面 characters 里的原名），
+     没有人物就给空数组。流水线靠它去取角色参考图，写错会导致人物串脸。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
   {
     "shots": [
       {
-        "shot_number": 1,
-        "type": "establishing/medium/close/easy",
-        "camera": "fixed/push/pll/pan/track",
-        "description": "scene_description",
-        "dialogue": "dialogue_text",
-        "duration": "5 seconds",
-        "mood": "emotion_mood"
+        "no": 1,
+        "shot_type": "character_closeup",
+        "characters": ["本镜出现的角色名，无人物则 []"],
+        "duration": 5,
+        "subtitle": "这一镜的字幕兼配音，中文口语短句，12-24 字",
+        "image_prompt": "英文生图提示词：角色锚点 + 状态 + 场景 + 机位 + 画质",
+        "video_prompt": "static camera, 一个具体微动作, background completely static, 5 seconds",
+        "mood": "情绪，6 字以内"
       }
     ]
   }
 
 config:
   model: deepseek-chat
-  temperature: 0.5
-  max_tokens: 5000
+  temperature: 0.7
+  max_tokens: 6000

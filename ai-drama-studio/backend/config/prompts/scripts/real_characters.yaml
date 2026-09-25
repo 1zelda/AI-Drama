@@ -1,0 +1,72 @@
+name: real_character_generator
+type: llm
+
+# 真人剧「选角卡」。三个下游靠它：
+#   image_prompt → character_assets（定妆照）与每个镜头的形象锚点，必须逐字复用
+#   voice        → narration 节点按说话人取音色（引擎读角色设定里的 voice 字段）
+#   costume/personality → 回填进角色档案库（character_assets 的 register_character）
+#
+# 上游字段一律写成 {{节点id.字段}}。引擎只认点号引用，写 {{synopsis}} 取不到值。
+prompt: |
+  你是真人短剧的选角导演（Casting Director）兼造型指导。
+  从下面的剧本里提炼登场角色，每人出一张「选角卡」：长相要具体到能选到同一个演员，
+  音色要从给定池子里选一个，且角色之间绝不撞声。
+
+  剧名：{{script_planner.title}}
+  梗概：{{script_planner.synopsis}}
+  时代地域：{{script_planner.setting}}
+  节拍：{{script_planner.beats}}
+  关键台词：{{script_planner.key_lines}}
+  画面风格：{{script_planner.visual_style}}
+  摄影规格：{{style_bible.style_token}}
+  目标人数：{{cast_size}}
+
+  选角铁律：
+  1. 角色 ≤3 个，只留推动主线的。每个角色都要有「必须出场」的理由。
+  2. image_prompt 必须是英文 45-70 词，只写**全剧不变的特征**，按这个顺序：
+     族裔与年龄 → 脸型与五官（具体到一处不对称或一处特征，如 slightly crooked nose）
+     → 发型发色与发质 → 皮肤真实质感（见第 3 条）→ 上衣 → 下装 → 配饰 → 主色调。
+     不要写表情、动作、场景、镜头、画风词、画质词（系统会统一拼 style_token）。
+  3. 每人必须写一条「不完美的地方」（痣、疤、胡茬、肤色不均、眼袋、淡斑、
+     粗细不均的眉毛…）和一处「具体衣物状态」（起球的袖口、洗旧的领口、褶皱）。
+     完美无瑕 = AI 感。这是写实风最容易翻车的地方，也是选角卡区别于动漫人设的核心。
+  4. 角色之间主色调必须拉开（如一人藏青、一人米白、一人暗红），
+     避免两人同框时糊成一片；族裔/年龄/性别也要有明显区分度。
+  5. voice 必须从下面这个池子里**逐字**挑一个（大小写、连字符一字不差），
+     三个角色三个音色，禁止重复；音色要贴合年龄与性格：
+     成年女：zh-CN-XiaoxiaoNeural（温和日常）/ zh-CN-XiaoyiNeural（活泼年轻）
+     　　　　zh-CN-XiaohanNeural（温柔低）/ zh-CN-XiaoqiuNeural（知性成熟）
+     　　　　zh-CN-XiaomengNeural（嗲、撒娇）
+     成年男：zh-CN-YunxiNeural（青年叙述）/ zh-CN-YunjianNeural（浑厚有压迫感）
+     　　　　zh-CN-YunyangNeural（克制、播音感）/ zh-CN-YunyeNeural（少年感）
+     　　　　zh-CN-YunfengNeural（严肃、官方）
+     方言/特色：zh-CN-liaoning-XiaobeiNeural（东北女）/ zh-CN-shaanxi-XiaoniNeural（陕西女）
+     要旁白音就用 zh-CN-YunjianNeural 或 zh-CN-YunyangNeural，不要占角色的音色。
+  6. performance 是「这个演员的习惯」：写 2-3 个可拍的小动作（说话时不看你、
+     紧张时搓拇指、笑之前先抿嘴），下游分镜靠它演情绪，不靠大喊大叫。
+  7. 中文描述照常用中文，简洁，不要写分镜、不要写台词。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
+  {
+    "characters": [
+      {
+        "name": "角色名，2-3 字",
+        "role": "主角 / 反派 / 配角",
+        "age": 28,
+        "sex": "男 / 女",
+        "personality": "性格关键词，10 字以内",
+        "appearance": "中文外貌，30 字以内，必须含那处不完美的特征",
+        "costume": "中文服装，20 字以内，含衣物的新旧状态",
+        "color": "主色调，如 藏青 / 米白 / 暗红",
+        "flaw": "这脸上最 identifiable 的一处瑕疵，中文 10 字以内",
+        "performance": ["可拍的habits小动作 1", "2"],
+        "image_prompt": "english casting anchor, 45-70 words, unchanging features only",
+        "voice": "zh-CN-XiaoxiaoNeural"
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.6
+  max_tokens: 3200

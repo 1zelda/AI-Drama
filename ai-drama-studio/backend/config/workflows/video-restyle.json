@@ -1,0 +1,102 @@
+{
+  "name": "video-restyle",
+  "description": "片段魔改（假如这条片子是别的国家/时代/导演拍的）流水线：读入一条现成视频 → 抽关键帧 → 视觉模型如实反推逐镜记录 → 世界观圣经把目标风格翻译成替换清单 → 拿原片帧当参考逐镜重绘（质检双轴打分：世界观没换或构图被改都不许过）→ 图生视频 → 成片垫原片音轨。和动漫/真人线最大的差别是这条线不写新剧本，它以「原片」为唯一事实来源：构图、机位、人物站位、动作、时长全部锁死，只换世界观（服装/道具/招牌文字/建筑/光源/配色）。运行前要在 /make 页面上传一段视频（或运行输入写 source_video=素材库id/本地路径），并从一个目标风格预设把 preset_label、preset_era_region、preset_signature、preset_positive、preset_style_token、preset_camera、preset_audio、preset_displacement 传进来。三处需要按素材改：① shot_images 的 width/height 出厂按竖屏 9:16 写死，横屏素材要换成 1344x768；② reverse_prompt 走视觉模型，读的是 VISION_API_KEY/ZHIPU_API_KEY，不是 deepseek；③ video_edit 节点默认关闭，打开前确认 DASHSCOPE_API_KEY 与 PUBLIC_ASSET_BASE_URL 都配好了，并且把 final_cut 的 from 改成 [\"video_edit\"]。",
+  "version": "1.0.0",
+  "nodes": {
+    "input_clip": {
+      "type": "video_input",
+      "frames": 4,
+      "max_side": 1024,
+      "extract_audio": true,
+      "output": "input_clip"
+    },
+    "reverse_prompt": {
+      "type": "llm",
+      "prompt_template": "restyle_reverse.yaml",
+      "images_from": "input_clip",
+      "depends_on": ["input_clip"],
+      "max_tokens": 6000,
+      "timeout": 600,
+      "output": "reverse_prompt"
+    },
+    "style_bible": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "restyle_bible.yaml",
+      "depends_on": ["reverse_prompt"],
+      "max_tokens": 4000,
+      "output": "style_bible"
+    },
+    "shot_images": {
+      "type": "image",
+      "prompt": "{{style_bible.style_token}}, {{image_prompt}}, lighting: {{style_bible.lighting}}, palette: {{style_bible.palette}}, wardrobe: {{style_bible.wardrobe}}, set: {{style_bible.set_design}}, keep the reference frame's exact composition, camera height, shot size, number of people and their positions and action — replace only wardrobe, props, signage text, set dressing, vehicles, vegetation and light",
+      "negative_prompt": "{{style_bible.negative_prompt}}, text, watermark, logo, extra fingers, deformed hands",
+      "depends_on": ["input_clip", "reverse_prompt", "style_bible"],
+      "foreach": "reverse_prompt.shots",
+      "init_image_from": "input_clip",
+      "width": 768,
+      "height": 1344,
+      "concurrency": 2,
+      "qc": {
+        "enabled": true,
+        "threshold": 8,
+        "max_attempts": 2,
+        "compare_source": true,
+        "prompt_template": "restyle_qc_vision.yaml"
+      },
+      "output": "shot_images"
+    },
+    "shot_videos": {
+      "type": "video",
+      "provider": "seedance",
+      "mode": "first_frame",
+      "prompt": "{{video_prompt}}",
+      "depends_on": ["reverse_prompt", "shot_images"],
+      "foreach": "reverse_prompt.shots",
+      "first_frame_from": "shot_images",
+      "seconds": 5,
+      "resolution": "720p",
+      "camera_fixed": false,
+      "output": "videos"
+    },
+    "video_edit": {
+      "type": "video",
+      "disabled": true,
+      "provider": "dashscope",
+      "model": "wan2.7-videoedit",
+      "mode": "video_edit",
+      "prompt": "{{style_bible.style_token}}. Restage the source clip inside the {{preset_label}} world: {{style_bible.wardrobe}}; {{style_bible.set_design}}; {{style_bible.lighting}}. Keep the original framing, camera movement, blocking, action beats and timing exactly; change only costumes, props, signage text, set dressing and light.",
+      "depends_on": ["input_clip", "style_bible", "shot_images"],
+      "source_video_from": "input_clip",
+      "first_frame_from": "shot_images",
+      "seconds": 5,
+      "resolution": "720p",
+      "output": "edited_videos"
+    },
+    "final_cut": {
+      "type": "postprocess",
+      "depends_on": ["input_clip", "shot_videos"],
+      "from": ["shot_videos"],
+      "bgm_from": "input_clip",
+      "bgm_gain_db": -2,
+      "width": 720,
+      "height": 1280,
+      "fps": 30,
+      "fit": "contain",
+      "crossfade": 0,
+      "crf": 20,
+      "preset": "veryfast",
+      "trim_badge": true,
+      "filename": "restyle_final.mp4",
+      "output": "final_video"
+    }
+  },
+  "execution": {
+    "parallel": false,
+    "retry": 2,
+    "timeout": 900,
+    "concurrency": 1,
+    "heartbeat_interval": 10
+  }
+}

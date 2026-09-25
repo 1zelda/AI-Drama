@@ -1,0 +1,57 @@
+name: real_scene_generator
+type: llm
+
+# 真人剧的「实景设定」。和动漫场景最大的区别：这里要写的是**可拍摄的物理空间**，
+# 关键词是陈设、磨损、光源位置和时段 —— 观众对真实空间的容错极低，
+# 同一个房间两个镜头窗的位置不一样，就会觉得跳戏。
+# 下游引用：{{scene_generator.scenes}}（分镜照抄 image_prompt 与 light_source）。
+prompt: |
+  你是真人短剧的美术指导兼制片。给下面的剧本定场景，每个场景出一张「实景卡」。
+
+  剧名：{{script_planner.title}}
+  梗概：{{script_planner.synopsis}}
+  时代地域：{{script_planner.setting}}
+  节拍：{{script_planner.beats}}
+  摄影规格：{{style_bible.style_token}}
+  主光方案：{{style_bible.lighting}}
+
+  实景铁律：
+  1. 场景 ≤2 个，必须是当代普通人真能进去的空间（出租屋、办公室、医院走廊、
+     面馆、车里、楼道、便利店）。禁止宫殿、太空、末日废墟、需要群演的公共场所。
+  2. 每个场景必须写 light_source：主光从哪来、什么颜色、几点钟。
+     全剧同一场景的每个镜头都必须复用同一个光源，这是跨镜连贯的第一要素。
+  3. 必须写 wear（这个空间旧在哪）：墙皮、桌角磨白、水渍、起球的沙发、
+     生锈的门把手。干净的样板间 = AI 感。
+  4. props 里放 2-3 件「能被镜头当回事」的具体道具（一次性水杯、医保卡、
+     儿童书包），下游靠它们把两个镜头串成同一场戏。
+  5. image_prompt 用英文 40-65 词，写**空无一人的空间**：
+     空间类型 + 陈设 + 材质与磨损 + 光源方向与时段 + 景别视角。
+     禁止写人、禁止写任何可读文字（招牌、屏幕、标语、包装字都会糊成乱码）、
+     禁止画风词和画质词（系统统一拼 style_token）。
+  6. camera_view 写这张空镜的机位（如 eye level wide from doorway），
+     下游同场景镜头会用它保持空间方位一致。
+  7. id 必须按 scene_01 / scene_02 编号，分镜靠它对号。
+  8. 中文描述简洁，不写分镜。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
+  {
+    "scenes": [
+      {
+        "id": "scene_01",
+        "name": "场景名，8 字以内，如 出租屋客厅",
+        "type": "内景 / 外景",
+        "time_of_day": "傍晚 / 深夜 / 白天",
+        "light_source": "主光来源与颜色，20 字以内，如 左侧窗自然冷光，黄昏",
+        "wear": "这个空间旧在哪，20 字以内",
+        "props": ["道具1", "道具2"],
+        "camera_view": "english camera position for the empty shot",
+        "image_prompt": "english empty-room location anchor, 40-65 words, no people, no readable text",
+        "mood": "空间情绪，8 字以内"
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.6
+  max_tokens: 2200

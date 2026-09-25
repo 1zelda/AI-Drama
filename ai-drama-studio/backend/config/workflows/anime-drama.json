@@ -1,0 +1,161 @@
+{
+  "name": "anime-drama",
+  "description": "AI 动漫（漫剧）流水线：动漫剧本 → 画风圣经 → 人设 → 定妆图 → 场景设定 → 空镜资产 → 分镜（含首尾帧）→ 生图 → 生视频 → 配音 → 成片。核心是「画风圣经」只决定一次，style_token 与 negative_prompt 逐字拼进每一张图，外加每个镜头都逐字复用角色形象锚点，这是十张图像同一部番的关键。角色/场景资产节点出的是给人审阅选优的定妆图与背景板。shot_end_frames（尾帧）默认关闭：只有把 shot_videos 换成支持首尾帧的 provider（seedance / agnes）时才值得打开。",
+  "version": "1.0.0",
+  "nodes": {
+    "script_planner": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "anime_script.yaml",
+      "output": "script"
+    },
+    "style_bible": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "anime_style.yaml",
+      "depends_on": ["script_planner"],
+      "output": "style_bible"
+    },
+    "character_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "anime_characters.yaml",
+      "depends_on": ["script_planner", "style_bible"],
+      "output": "characters"
+    },
+    "character_assets": {
+      "type": "image",
+      "prompt": "{{style_bible.style_token}}, character design sheet, {{turnaround_prompt}}, full body from head to toe, plain white background, flat even studio lighting, sharp clean line art",
+      "negative_prompt": "{{style_bible.negative_prompt}}, background scenery, multiple characters, cropped limbs, text, watermark, signature",
+      "depends_on": ["character_generator", "style_bible"],
+      "foreach": "characters",
+      "width": 768,
+      "height": 1344,
+      "character_refs": true,
+      "character_refs_max": 1,
+      "concurrency": 2,
+      "output": "character_images"
+    },
+    "scene_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "anime_scenes.yaml",
+      "depends_on": ["script_planner", "style_bible"],
+      "output": "scenes"
+    },
+    "scene_assets": {
+      "type": "image",
+      "prompt": "{{style_bible.style_token}}, {{image_prompt}}, empty stage with no character present, no people, no text, no watermark, no logo",
+      "negative_prompt": "{{style_bible.negative_prompt}}, person, human, character, text, subtitle, watermark, logo",
+      "depends_on": ["scene_generator", "style_bible"],
+      "foreach": "scenes",
+      "width": 1280,
+      "height": 720,
+      "concurrency": 2,
+      "output": "scene_images"
+    },
+    "storyboard_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "anime_storyboard.yaml",
+      "depends_on": ["script_planner", "style_bible", "character_generator", "scene_generator"],
+      "output": "storyboard"
+    },
+    "shot_images": {
+      "type": "image",
+      "prompt": "{{style_bible.style_token}}, {{image_prompt}}",
+      "negative_prompt": "{{style_bible.negative_prompt}}",
+      "depends_on": ["storyboard_generator", "character_generator", "scene_generator", "style_bible"],
+      "foreach": "storyboard.shots",
+      "shot_type": "{{shot_type}}",
+      "width": 768,
+      "height": 1344,
+      "character_refs": true,
+      "character_refs_max": 2,
+      "concurrency": 2,
+      "qc": {
+        "enabled": true,
+        "threshold": 6,
+        "max_attempts": 2,
+        "prompt_template": "anime_qc_vision.yaml"
+      },
+      "output": "shot_images"
+    },
+    "shot_end_frames": {
+      "type": "image",
+      "disabled": true,
+      "prompt": "{{style_bible.style_token}}, {{end_frame_prompt}}",
+      "negative_prompt": "{{style_bible.negative_prompt}}",
+      "depends_on": ["storyboard_generator", "character_generator", "scene_generator", "style_bible"],
+      "foreach": "storyboard.shots",
+      "shot_type": "{{shot_type}}",
+      "width": 768,
+      "height": 1344,
+      "character_refs": true,
+      "character_refs_max": 2,
+      "concurrency": 2,
+      "output": "shot_end_frames"
+    },
+    "narration": {
+      "type": "tts",
+      "engine": "edge",
+      "voice": "zh-CN-YunxiNeural",
+      "rate": "+8%",
+      "text_field": "subtitle",
+      "depends_on": ["storyboard_generator"],
+      "foreach": "storyboard.shots",
+      "concurrency": 2,
+      "output": "narration"
+    },
+    "shot_videos": {
+      "type": "video",
+      "prompt": "{{video_prompt}}",
+      "depends_on": ["storyboard_generator", "shot_images", "shot_end_frames"],
+      "foreach": "storyboard.shots",
+      "shot_type": "{{shot_type}}",
+      "first_frame_from": "shot_images",
+      "last_frame_from": "shot_end_frames",
+      "seconds": 5,
+      "resolution": "720p",
+      "output": "videos"
+    },
+    "final_cut": {
+      "type": "postprocess",
+      "depends_on": ["script_planner", "shot_videos", "narration"],
+      "from": ["shot_videos"],
+      "voices_from": ["narration"],
+      "subtitles_from": ["narration"],
+      "subtitle_field": "text",
+      "width": 720,
+      "height": 1280,
+      "fps": 30,
+      "fit": "contain",
+      "burn_subtitle": true,
+      "crossfade": 0.3,
+      "crf": 20,
+      "preset": "veryfast",
+      "bgm_gain_db": -20,
+      "voice_gain_db": 2,
+      "title_card": "{{script_planner.title}}",
+      "title_card_sub": "{{script_planner.genre}}",
+      "end_card": "下集预告",
+      "end_card_sub": "{{script_planner.ova_teaser}}",
+      "card_seconds": 2.5,
+      "trim_badge": true,
+      "filename": "final.mp4",
+      "output": "final_video"
+    }
+  },
+  "execution": {
+    "parallel": false,
+    "retry": 2,
+    "timeout": 900,
+    "concurrency": 1,
+    "heartbeat_interval": 10
+  }
+}

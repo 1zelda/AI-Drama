@@ -1,0 +1,190 @@
+{
+  "name": "realistic-drama",
+  "description": "真人剧（实拍质感）流水线：短剧剧本 → 摄影规格 → 选角卡 → 定妆照回填档案库 → 实景卡 → 空镜 → 带说话人的分镜 → 生图 → 生视频 → 按角色分音色配音 → 成片。三个独有能力：① 画风圣经只算一次，style_token 与 negative_prompt 逐字拼进每张图，且专门惩罚磨皮塑料脸；② 定妆照生成完自动登记进角色档案库，后续每一镜都拿它当参考图；③ 配音按说话人取音色（角色设定里的 voice），三个人三个嗓子，旁白单独一路。shot_end_frames 与 lipsync 两个节点默认关闭：尾帧要换支持首尾帧的 provider 才有意义，口型同步要本机装好 ComfyUI + InfiniteTalk。",
+  "version": "1.0.0",
+  "nodes": {
+    "script_planner": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "real_script.yaml",
+      "output": "script"
+    },
+    "style_bible": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "real_style.yaml",
+      "depends_on": ["script_planner"],
+      "output": "style_bible"
+    },
+    "character_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "real_characters.yaml",
+      "depends_on": ["script_planner", "style_bible"],
+      "output": "characters"
+    },
+    "character_assets": {
+      "type": "image",
+      "prompt": "close-up portrait of {{name}}, {{image_prompt}}, wearing {{costume}}, standing relaxed three-quarter view facing camera, arms down and still, hands out of frame, plain neutral grey studio backdrop, single soft key light from camera left, subtle negative fill on the right, shot at eye level, sharp focus on the face",
+      "negative_prompt": "{{style_bible.negative_prompt}}, background scenery, other people, second person, cropped head, looking away, hand near mouth, text, watermark, logo",
+      "depends_on": ["character_generator", "style_bible"],
+      "foreach": "characters",
+      "width": 768,
+      "height": 1344,
+      "character_refs": true,
+      "character_refs_max": 1,
+      "register_character": true,
+      "register_character_max": 2,
+      "concurrency": 2,
+      "output": "character_images"
+    },
+    "scene_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "real_scenes.yaml",
+      "depends_on": ["script_planner", "style_bible"],
+      "output": "scenes"
+    },
+    "scene_assets": {
+      "type": "image",
+      "prompt": "{{style_bible.style_token}}, {{image_prompt}}, empty location with nobody present, wide establishing view, {{camera_view}}, blank signage with no readable text",
+      "negative_prompt": "{{style_bible.negative_prompt}}, person, people, human face, silhouette, readable text, signboard lettering, subtitles, watermark, logo",
+      "depends_on": ["scene_generator", "style_bible"],
+      "foreach": "scenes",
+      "width": 768,
+      "height": 1344,
+      "concurrency": 2,
+      "output": "scene_images"
+    },
+    "storyboard_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "real_storyboard.yaml",
+      "depends_on": ["script_planner", "style_bible", "character_generator", "scene_generator"],
+      "output": "storyboard"
+    },
+    "shot_images": {
+      "type": "image",
+      "prompt": "{{style_bible.style_token}}, {{style_bible.skin_texture_rule}}, {{image_prompt}}",
+      "negative_prompt": "{{style_bible.negative_prompt}}",
+      "depends_on": ["storyboard_generator", "character_generator", "scene_generator", "style_bible"],
+      "foreach": "storyboard.shots",
+      "shot_type": "{{shot_type}}",
+      "width": 768,
+      "height": 1344,
+      "character_refs": true,
+      "character_refs_max": 2,
+      "concurrency": 2,
+      "qc": {
+        "enabled": true,
+        "threshold": 7,
+        "max_attempts": 2,
+        "prompt_template": "real_qc_vision.yaml"
+      },
+      "output": "shot_images"
+    },
+    "shot_end_frames": {
+      "type": "image",
+      "disabled": true,
+      "prompt": "{{style_bible.style_token}}, {{style_bible.skin_texture_rule}}, {{end_frame_prompt}}",
+      "negative_prompt": "{{style_bible.negative_prompt}}",
+      "depends_on": ["storyboard_generator", "character_generator", "scene_generator", "style_bible"],
+      "foreach": "storyboard.shots",
+      "shot_type": "{{shot_type}}",
+      "width": 768,
+      "height": 1344,
+      "character_refs": true,
+      "character_refs_max": 2,
+      "concurrency": 2,
+      "output": "shot_end_frames"
+    },
+    "narration": {
+      "type": "tts",
+      "engine": "edge",
+      "voice": "zh-CN-YunjianNeural",
+      "voice_pool": [
+        "zh-CN-XiaoxiaoNeural",
+        "zh-CN-YunxiNeural",
+        "zh-CN-XiaoyiNeural",
+        "zh-CN-YunjianNeural",
+        "zh-CN-XiaoqiuNeural",
+        "zh-CN-YunyangNeural"
+      ],
+      "voices_from": "character_generator",
+      "speaker_field": "speaker",
+      "text_field": "line",
+      "rate": "+0%",
+      "depends_on": ["storyboard_generator", "character_generator"],
+      "foreach": "storyboard.shots",
+      "concurrency": 2,
+      "output": "narration"
+    },
+    "shot_videos": {
+      "type": "video",
+      "prompt": "{{video_prompt}}",
+      "depends_on": ["storyboard_generator", "shot_images", "shot_end_frames"],
+      "foreach": "storyboard.shots",
+      "shot_type": "{{shot_type}}",
+      "first_frame_from": "shot_images",
+      "last_frame_from": "shot_end_frames",
+      "tail_frame_from_prev": true,
+      "seconds": 5,
+      "resolution": "720p",
+      "output": "videos"
+    },
+    "lipsync": {
+      "type": "comfyui_video",
+      "disabled": true,
+      "provider": "comfyui",
+      "workflow_file": "lipsync-infinite-talk.json",
+      "prompt": "{{video_prompt}}",
+      "depends_on": ["storyboard_generator", "shot_images", "narration"],
+      "foreach": "storyboard.shots",
+      "first_frame_from": "shot_images",
+      "audio_from": "narration",
+      "seconds": 5,
+      "fps": 25,
+      "width": 832,
+      "height": 480,
+      "output": "lipsync_videos"
+    },
+    "final_cut": {
+      "type": "postprocess",
+      "depends_on": ["script_planner", "storyboard_generator", "shot_videos", "narration"],
+      "from": ["shot_videos"],
+      "voices_from": ["narration"],
+      "subtitles_from": ["storyboard_generator"],
+      "subtitle_field": "subtitle",
+      "width": 720,
+      "height": 1280,
+      "fps": 30,
+      "fit": "contain",
+      "burn_subtitle": true,
+      "crossfade": 0.3,
+      "crf": 20,
+      "preset": "veryfast",
+      "bgm_gain_db": -22,
+      "voice_gain_db": 3,
+      "title_card": "{{script_planner.title}}",
+      "title_card_sub": "{{script_planner.genre}}",
+      "end_card": "下集预告",
+      "end_card_sub": "{{script_planner.next_hook}}",
+      "card_seconds": 2.5,
+      "trim_badge": true,
+      "filename": "final.mp4",
+      "output": "final_video"
+    }
+  },
+  "execution": {
+    "parallel": false,
+    "retry": 2,
+    "timeout": 900,
+    "concurrency": 1,
+    "heartbeat_interval": 10
+  }
+}

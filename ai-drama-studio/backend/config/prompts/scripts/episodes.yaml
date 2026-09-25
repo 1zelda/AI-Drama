@@ -1,29 +1,38 @@
 name: episode_planner
 type: llm
 
+# 大纲 → 分集。单集短剧时只返回 1 集即可。
 prompt: |
-  Based on the following story and characters, design the episode structure:
-  
-  Title: {{title}}
-  Symopsis: {{symopsis}}
-  Characters: {{characters}}
-  
-  Please output JSON format:
+  你是短剧主编。把下面的故事大纲拆成分集。
+
+  剧名：{{script_planner.title}}
+  故事梗概：{{script_planner.synopsis}}
+  反转：{{script_planner.twist}}
+  结尾：{{script_planner.ending}}
+  计划集数：{{episodes}}
+
+  分集铁律：
+  1. 每集结尾必须卡在悬念上（断章），这是短剧留存的核心。
+  2. 每集都要有一个小高潮，不要把高潮全攒到最后一集。
+  3. 第一集必须在 3 秒内抛出冲突。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
   {
-   "total_episodes": 10,
-   "episode_duration": "1-2 minutes",
-   "episodes": [
+    "total_episodes": 1,
+    "episode_duration": "1 分钟",
+    "episodes": [
       {
         "number": 1,
-        "title": "episode_1",
-        "summary": "summary_description",
-        "hooks": ["hook_1", "hook_2"],
-        "key_scenes": ["scene_1", "scene_2"]
+        "title": "分集标题，10 字以内",
+        "summary": "本集内容，80 字以内",
+        "hook": "本集开篇冲突，一句话",
+        "cliffhanger": "本集结尾悬念，一句话",
+        "key_scenes": ["场景1", "场景2"]
       }
     ]
   }
 
 config:
   model: deepseek-chat
-  temperature: 0.6
+  temperature: 0.7
   max_tokens: 4000

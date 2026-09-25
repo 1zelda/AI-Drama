@@ -1,0 +1,57 @@
+name: anime_character_generator
+type: llm
+
+# 动漫角色设定。两条硬规定来自 AI 生图的现实：
+#   1. image_prompt 只写「不变特征」，是跨镜头的形象锚点，引擎会逐字拼进每个镜头；
+#   2. 定妆图（turnaround_prompt）只画中性站姿 —— 一张图塞多个姿势会让模型重画人体，
+#      动漫的体型比例（头身比）一漂移，全剧角色就不是同一个人了。戏剧动作留给分镜。
+# 画风词一律不许出现在这里，由 anime_style.yaml 单点供给。
+prompt: |
+  你是动漫角色设计（人设师）。为这部动漫短剧出登场角色设定。
+
+  剧名：{{script_planner.title}}
+  梗概：{{script_planner.synopsis}}
+  名场面：{{script_planner.iconic_moments}}
+  画风基底：{{style_bible}}
+  整体画面风格：{{script_planner.visual_style}}
+
+  人设铁律：
+  1. 角色不超过 3 个，只保留推动主线的。每个角色给一个 2-3 字中文名字。
+  2. head_ratio（头身比）全剧必须统一（如 7 或 7.5），不同角色可以差半头，
+     不许一人 5 头身一人 9 头身 —— 同框时比例不一致最出戏。
+  3. 主色调必须拉开：一个角色一个主色，且都要落在 palette 内。
+  4. image_prompt 用英文，45-65 词，只写不变特征：
+     年龄感 / 脸型 / 发型与发色 / 瞳色与瞳形 / 服饰单品与配色 / 随身道具 / 头身比。
+     禁止写：表情、动作、场景、镜头、画风词、画质词。
+  5. turnaround_prompt 用英文，描述这张定妆图怎么排：
+     纯色或白底、全身直立、双手自然下垂、正面朝前、平光无阴影倾向。
+     不要写姿势变化，不要写多视角拼图（模型排不准，跨镜靠 image_prompt 锚点即可）。
+  6. performance_style 是这个人「动漫式演法」的动词表（如 激动时前倾握拳、
+     害羞时别开视线），分镜会用它，不要混进 image_prompt。
+  7. voice 给一个 edge-tts 音色名，供配音节点直接用。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
+  {
+    "characters": [
+      {
+        "name": "角色名，2-3 字",
+        "role": "主角 / 对手 / 配角",
+        "age": 17,
+        "head_ratio": 7,
+        "personality": "性格关键词，10 字以内",
+        "appearance": "中文外貌，30 字以内，含发色瞳色",
+        "costume": "中文服装，20 字以内",
+        "color": "主色调，与 palette 对应",
+        "props": "随身标志道具，10 字以内，没有给空字符串",
+        "image_prompt": "english identity anchor, 45-65 words, static features only",
+        "turnaround_prompt": "english full-body neutral standing portrait layout instruction",
+        "performance_style": "动漫式演法动词表，30 字以内",
+        "voice": "zh-CN-YunxiNeural"
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.6
+  max_tokens: 3000

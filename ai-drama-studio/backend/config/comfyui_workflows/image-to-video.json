@@ -1,6 +1,6 @@
 {
   "name": "image-to-video",
-  "description": "Generate video from reference image using Wan 2.2",
+  "description": "Wan 2.2 I2V 14B fp8 + LightX2V 4-step LoRA. 首帧图生视频，双模型(high/low noise)分步采样。模型名可在 ComfyUI 端改名后在此对应。",
   "type": "video",
   "output_node": "111",
   "nodes": {
@@ -15,11 +15,8 @@
     "89": {
       "class_type": "CLIPTextEncode",
       "inputs": {
-        "clip": [
-          "84",
-          0
-        ],
-        "text": "oversaturated, overexposed, static, blurry, subtitles, low quality"
+        "clip": ["84", 0],
+        "text": "{{negative_prompt}}"
       }
     },
     "90": {
@@ -31,10 +28,7 @@
     "93": {
       "class_type": "CLIPTextEncode",
       "inputs": {
-        "clip": [
-          "84",
-          0
-        ],
+        "clip": ["84", 0],
         "text": "{{positive_prompt}}"
       }
     },
@@ -59,81 +53,110 @@
       }
     },
     "98": {
-      "class_type": "VAEEncode",
+      "class_type": "WanImageToVideo",
       "inputs": {
-        "pixels": [
-          "97",
-          0
-        ],
-        "vae": [
-          "90",
-          0
-        ]
+        "width": "{{width}}",
+        "height": "{{height}}",
+        "length": "{{length}}",
+        "batch_size": 1,
+        "positive": ["93", 0],
+        "negative": ["89", 0],
+        "vae": ["90", 0],
+        "start_image": ["97", 0]
       }
     },
-    "100": {
-      "class_type": "FluxNoise",
+    "101": {
+      "class_type": "LoraLoaderModelOnly",
       "inputs": {
-        "seed": "{{seed}}",
-        "width": 832,
-        "height": 480
+        "model": ["95", 0],
+        "lora_name": "wan2.2_i2v_lightx2v_4steps_lora_v1_high_noise.safetensors",
+        "strength_model": 1.0
       }
     },
-    "105": {
-      "class_type": "KSamplerSelect",
+    "102": {
+      "class_type": "LoraLoaderModelOnly",
       "inputs": {
-        "sampler_name": "euler_ancestral"
+        "model": ["96", 0],
+        "lora_name": "wan2.2_i2v_lightx2v_4steps_lora_v1_low_noise.safetensors",
+        "strength_model": 1.0
       }
     },
-    "107": {
-      "class_type": "SamplerCustomAdvanced",
+    "104": {
+      "class_type": "ModelSamplingSD3",
       "inputs": {
-        "noise": [
-          "100",
-          0
-        ],
-        "positive": [
-          "93",
-          0
-        ],
-        "negative": [
-          "89",
-          0
-        ],
-        "sampler": [
-          "105",
-          0
-        ],
-        "latent_image": [
-          "98",
-          0
-        ]
+        "model": ["101", 0],
+        "shift": 5.0
       }
     },
-    "108": {
+    "103": {
+      "class_type": "ModelSamplingSD3",
+      "inputs": {
+        "model": ["102", 0],
+        "shift": 5.0
+      }
+    },
+    "86": {
+      "class_type": "KSamplerAdvanced",
+      "inputs": {
+        "model": ["104", 0],
+        "positive": ["98", 0],
+        "negative": ["98", 1],
+        "latent_image": ["98", 2],
+        "add_noise": "enable",
+        "noise_seed": "{{seed}}",
+        "steps": 4,
+        "cfg": 1.0,
+        "sampler_name": "euler",
+        "scheduler": "simple",
+        "start_at_step": 0,
+        "end_at_step": 2,
+        "return_with_leftover_noise": "enable"
+      }
+    },
+    "85": {
+      "class_type": "KSamplerAdvanced",
+      "inputs": {
+        "model": ["103", 0],
+        "positive": ["98", 0],
+        "negative": ["98", 1],
+        "latent_image": ["86", 0],
+        "add_noise": "disable",
+        "noise_seed": 0,
+        "steps": 4,
+        "cfg": 1.0,
+        "sampler_name": "euler",
+        "scheduler": "simple",
+        "start_at_step": 2,
+        "end_at_step": 4,
+        "return_with_leftover_noise": "disable"
+      }
+    },
+    "87": {
       "class_type": "VAEDecode",
       "inputs": {
-        "samples": [
-          "107",
-          0
-        ],
-        "vae": [
-          "90",
-          0
-        ]
+        "samples": ["85", 0],
+        "vae": ["90", 0]
       }
     },
     "111": {
       "class_type": "VHS_VideoCombine",
       "inputs": {
-        "images": [
-          "108",
-          0
-        ],
+        "images": ["87", 0],
         "format": "video/h264-mp4",
-        "fps": 16,
-        "filename_prefix": "drama_video"
+        "fps": "{{fps}}",
+        "filename_prefix": "drama_video",
+        "save_output": true
       }
     }
+  },
+  "params": {
+    "positive_prompt": { "node": "93", "field": "text" },
+    "negative_prompt": { "node": "89", "field": "text" },
+    "reference_image": { "node": "97", "field": "image" },
+    "width": { "node": "98", "field": "width" },
+    "height": { "node": "98", "field": "height" },
+    "length": { "node": "98", "field": "length" },
+    "seed": { "node": "86", "field": "noise_seed" },
+    "fps": { "node": "111", "field": "fps" }
   }
 }

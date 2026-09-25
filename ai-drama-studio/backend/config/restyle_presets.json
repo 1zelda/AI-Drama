@@ -1,0 +1,476 @@
+{
+  "version": 1,
+  "note": "片段魔改线的风格预设库。用途不是加滤镜，是把整条片子的世界观搬到另一个地域/时代/导演讲座里去。喂给模型时优先级：positive（中文，模型听得懂）+ style_token（英文摄影美术描述）+ displacement（错置清单，逐条落到道具上）。alias 用来把用户口语（'印度人拍的''王家卫那种'）映射到预设。所有措辞吸收自 _upgrade/ArcReel/lib/style_templates.py 与 _upgrade/lumenx 的 style_presets 结构，并按'能不能真的换掉世界观'重写过。",
+  "field_help": {
+    "signature": "一眼让观众认出这个世界的三样东西，重绘时必须出现",
+    "displacement": "逐条替换清单：原片里的这个东西 → 目标世界里的替代品",
+    "camera": "机位/运动规则，魔改后节奏要跟着走",
+    "audio": "音轨与配音怎么处理（保留原声还是换语言/换音乐）",
+    "negative": "画面上绝对不该出现的东西，逐字拼进生图负面词"
+  },
+  "presets": [
+    {
+      "id": "bollywood",
+      "label": "宝莱坞歌舞片",
+      "category": "地域",
+      "alias": ["印度", "印度人拍的", "宝莱坞", "孟买"],
+      "era_region": "当代印度，马哈拉施特拉邦/旁遮普",
+      "signature": "饱和到刺眼的红黄配色、人物额头的吉祥痣或bindi、说唱两句就集体起舞的广场",
+      "positive": "宝莱坞 Masala 电影风格，高饱和红橙黄主色调，金色首饰与丝质纱丽，华丽群舞构图，戏剧化逆光，慢镜头风动，人群与彩带",
+      "style_token": "shot on anamorphic 2.35:1, Bollywood masala colour grade with saturated marigold reds and turquoise, gold bounce-board highlights, practical string lights, wind-machine hair, wide ensemble staging bursting into choreography",
+      "negative": "muted nordic palette, desaturated grey, empty background, modern minimal furniture, japanese interior, clean clinical lighting",
+      "displacement": [
+        "街道招牌 → 印地语手绘电影海报墙",
+        "汽车 → 装饰花环与铃铛的 Ambassador 老车或突突车",
+        "客厅 → 大理石地面 + 秋千床 + 金边神龛",
+        "衣服 → 纱丽/库尔塔，男性袖口卷起露金表",
+        "情绪转折点 → 突然插入 8 人群舞，镜头拉高俯拍",
+        "打斗 → 夸张慢镜 + 扬起一片沙尘 + 围观者拍手"
+      ],
+      "camera": "英雄登场用超低角度仰拍加慢镜；对话用过肩急推；群舞用升臂横移",
+      "audio": "原台词保留节奏但换印地语口型感配音，转场处垫 6 秒塔布拉鼓 + 弦乐齐奏",
+      "best_for": "家庭伦理、爱情、复仇、超级英雄"
+    },
+    {
+      "id": "nollywood",
+      "label": "尼日利亚诺莱坞",
+      "category": "地域",
+      "alias": ["非洲", "尼日利亚", "诺莱坞"],
+      "era_region": "当代拉各斯",
+      "signature": "鲜艳蜡染布料、教堂与灵恩布道、手持小DV质感、夸张到失真的音效点缀",
+      "positive": "诺莱坞低成本剧情片质感，硬热带的强烈直射日光，蜡染印花服装，拥挤的拉各斯街市，数字摄像机直出感，跳切，夸张表演",
+      "style_token": "shot on a consumer DV, harsh equatorial noon sun, crushed shadows, Ankara wax-print costumes, crowded Lagos market, hard jump cuts, over-driven production audio, slightly out of focus",
+      "negative": "polished cinema grade, film grain emulation, soft window light, european interior, quiet naturalistic acting",
+      "displacement": [
+        "办公室 → 发电机轰鸣的开放式写字楼 + 停电桥段",
+        "冲突解决 → 家族长老与牧师出场调解",
+        "豪车 → 黄黑涂装的拉各斯小巴",
+        "夜晚照明 → 煤油灯与手机手电筒",
+        "反派 → 穿白色刺绣长袍的'暴富归来者'"
+      ],
+      "camera": "手持跟拍、微抖；正反打直接跳切不留反应镜",
+      "audio": "保留原台词但语速加快，插入约鲁巴语感叹词，音效偏硬偏响",
+      "best_for": "家族争产、爱情背叛、逆袭"
+    },
+    {
+      "id": "k-cinema",
+      "label": "韩国类型片",
+      "category": "地域",
+      "alias": ["韩国", "首尔", "复仇"],
+      "era_region": "当代首尔/仁川",
+      "signature": "冷蓝灰调色、深夜霓虹、体制内的暴力、精致的服装剪裁",
+      "positive": "韩国类型片质感，冷蓝灰主调加一处暖色点缀，潮湿柏油路反光，写字楼与地下停车场，克制的表演，精准对称构图，突然爆发的暴力",
+      "style_token": "shot on Alexa with Panavision T lenses, teal-grey grade, wet asphalt reflections, sodium street lamps bleeding into blue hour, sterile office fluorescents, controlled symmetrical framing, sudden kinetic violence",
+      "negative": "warm tropical palette, sunny beach, sitcom lighting, handheld shakiness, comedic exaggeration",
+      "displacement": [
+        "警局 → 首尔地方警察厅的冷白灯走廊",
+        "黑帮 → 穿着考究的 Builders 集团安保",
+        "饭局 → 烧酒 + 烤肉店噪声",
+        "追逐 → 地下停车场与巷弄火锅店",
+        "结局 → 体制沉默，主角独自雨中站立"
+      ],
+      "camera": "长焦压缩的静默注视 + 突然手持贴近；升格只用一次",
+      "audio": "韩语口型感配音，低频轰鸣，关键台词后留 2 秒静场",
+      "best_for": "复仇、犯罪、阶级冲突"
+    },
+    {
+      "id": "j-morning",
+      "label": "日剧晨间剧/是枝裕和",
+      "category": "地域",
+      "alias": ["日本", "日剧", "东京", "是枝"],
+      "era_region": "当代日本地方城市",
+      "signature": "低对比的自然光、榻榻米与缘侧、吃饭拍得很认真、情绪全靠留白",
+      "positive": "是枝裕和式日剧质感，柔和散射自然光，低对比胶片色调，木造老屋与榻榻米，生活流调度，克制的长镜头，食物特写认真",
+      "style_token": "shot on 16mm, soft north-facing daylight, low-contrast pastel film grade, wooden showa-era house, tatami and engawa, eye-level static frames held too long, meals filmed with great seriousness",
+      "negative": "high contrast, saturated neon, dramatic shadows, fast cutting, heroic low angles",
+      "displacement": [
+        "争吵 → 沉默地摆饭桌，勺子碰碗的声音变大",
+        "办公室 → 地方市役所，纸扇与印章",
+        "告白 → 电车站台，错过一班",
+        "家庭 → 三代同住的木造老屋",
+        "结局 → 没有人道歉，只是夏天过去了"
+      ],
+      "camera": "三脚架静镜为主，机位高度=坐着的人眼；全场不用运动镜头",
+      "audio": "原台词删到一半，留下环境声（蝉、电车、风扇）",
+      "best_for": "家庭、亲情、成长"
+    },
+    {
+      "id": "soviet",
+      "label": "苏联宣传纪录片",
+      "category": "时代",
+      "alias": ["苏联", "宣传", "红色", "东欧"],
+      "era_region": "1960-80 年代苏联/东欧",
+      "signature": "粗糙的胶片划痕、巨型混凝土建筑、标语横幅、集体劳动的仰拍",
+      "positive": "苏联时代新闻纪录片质感，褪色橙绿双色，粗颗粒胶片与划痕，巨型混凝土纪念碑，横幅标语与扩音喇叭，集体劳动仰拍，庄严构图",
+      "style_token": "35mm archival newsreel, faded orange-green stock grade with scratches and gate weave, brutalist concrete monuments, red banners with Cyrillic slogans, megaphones, heroic low-angle crowds, stiff tripod pans",
+      "negative": "clean digital, shallow depth of field, warm romantic grade, handheld, modern glass towers",
+      "displacement": [
+        "公司会议 → 工厂党委扩大会，桌上摆搪瓷杯",
+        "汽车 → GAZ-24 伏尔加与有轨电车",
+        "服装 → 灰色工装与呢帽",
+        "商店 → 排队的公共食堂与配给票",
+        "广播 → 楼道大喇叭放音乐"
+      ],
+      "camera": "只有三脚架水平摇与仰拍；插入 1 秒空镜（齿轮/烟囱/旗帜）",
+      "audio": "铜管乐进行曲 + 男中音旁白念数字与口号",
+      "best_for": "任何题材，尤其职场与体育（反差最大）"
+    },
+    {
+      "id": "hk80s",
+      "label": "80年代港片",
+      "category": "时代",
+      "alias": ["港片", "香港", "王家卫前", "邵氏"],
+      "era_region": "1985-1995 香港",
+      "signature": "霓虹招牌、逼仄的唐楼楼梯、片场搭景感、手持追车、过度曝光的钨丝灯",
+      "positive": "八零九零港产片质感，钨丝灯偏橙、霓虹蓝粉撞色，唐楼铁闸与后巷，片场搭景感，手持急推，双镜头变焦呼吸，粗颗粒感光",
+      "style_token": "shot on Kodak 500T pushed one stop, tungsten-orange interiors against cyan-magenta neon signage, dense tong-lau stairwells and iron shutters, run-and-gun handheld, zoom breathing, visible film grain and halation",
+      "negative": "clean LED lighting, spacious modern apartment, quiet suburban streets, desaturated nordic grade",
+      "displacement": [
+        "警局 → 油麻地警署走廊与铁皮档案柜",
+        "车 → 的士与红色公共小巴",
+        "餐厅 → 茶餐厅冰柜与卡座",
+        "打架 → 后巷 + 折凳 + 碎玻璃",
+        "字幕 → 黄字黑边的粤语对白"
+      ],
+      "camera": "手持 + 急推变焦；一镜内换两次焦段；动作不剪碎",
+      "audio": "保留原台词节奏，加警笛、麻将、排风扇底噪",
+      "best_for": "警匪、江湖、爱情"
+    },
+    {
+      "id": "shaw",
+      "label": "邵氏武侠",
+      "category": "时代",
+      "alias": ["邵氏", "武侠", "古装老片"],
+      "era_region": "1960-70 港台粤语片厂",
+      "signature": "明显的棚内布景与画布远山、演员在纸上做的假山、浓妆、武打亮相定格",
+      "positive": "邵氏黄梅调武侠片厂质感，棚内搭景与手绘远山幕布，平面化的戏剧打光，鲜艳绸缎戏服，浓妆吊梢眉，武打后亮相定格，字幕卡转场",
+      "style_token": "Studio-shot Shaw Brothers wuxia look, painted mountain backdrops and papier-mache rocks visible as sets, flat theatrical key light with hard shadows, saturated silk costumes, heavy opera eye makeup, freeze-frame hero poses between fights, intertitle cards",
+      "negative": "photorealistic locations, natural light, modern lenses, shallow depth of field, gritty dirt",
+      "displacement": [
+        "街景 → 影城后街，明显是布景",
+        "树林 → 塑料树与画布幕",
+        "室内 → 屏风 + 红木家具 + 地台",
+        "天空 → 手绘云片 + 灯光模拟",
+        "反派出场 → 锣鼓点 + 定格亮相"
+      ],
+      "camera": "固定机位全景调度为主，重要台词推近景；武打用 45 度俯角",
+      "audio": "保留台词但换成国语老片配音腔（字正腔圆、略带夸张），锣鼓与丝竹点题",
+      "best_for": "任何动作戏，把现代片变武侠最好笑"
+    },
+    {
+      "id": "vhs",
+      "label": "VHS 家庭录像",
+      "category": "媒介",
+      "alias": ["录像带", "VHS", "80年代家庭", "DV"],
+      "era_region": "1990 前后，家用摄像机",
+      "signature": "时间戳、色带撕裂、对焦拉风箱、4:3 满屏噪点",
+      "positive": "VHS 家用录像质感，4:3 画幅，色度串扰与撕裂，水平噪点带，自动对焦拉风箱，塑料感肤色，屏幕时间戳，室内钨丝灯偏黄",
+      "style_token": "consumer VHS transfer, 4:3 frame with chroma bleeding and tracking distortion lines, soft smeared highlights, hunting autofocus, warm tungsten indoor cast, on-screen date stamp, washed-out skin tones",
+      "negative": "cinemascope, crisp digital sharpness, film grain, colour grading, stabilised motion",
+      "displacement": [
+        "任何场景 → 客厅与 backyard，摄像机由家人手持",
+        "对话 → 对着镜头讲话，像采访",
+        "转场 → 蓝屏噪声与快进条纹",
+        "配乐 → 磁带底噪 + 录音机里的流行歌",
+        "重要时刻 → 画面抖动加过曝"
+      ],
+      "camera": "肩扛呼吸感；变焦当运动用；每次构图都要先失焦再合焦",
+      "audio": "原声加磁带 hiss 与轻微走音（varispeed），对白略闷",
+      "best_for": "恐怖、悬疑、家庭戏（瞬间变 found footage）"
+    },
+    {
+      "id": "anderson",
+      "label": "韦斯·安德森",
+      "category": "讲座",
+      "alias": ["韦斯安德森", "对称", "马卡龙", "布达佩斯"],
+      "era_region": "架空中欧，1930s/当代并存",
+      "signature": "绝对中轴对称、平面化调度、粉彩配色、章回字幕卡、微缩模型",
+      "positive": "韦斯·安德森风格，糖果色马卡龙配色，严格中轴对称构图，平面化横向调度，复古布景与图案壁纸，章回字幕卡，俯拍整理行李的平面镜头",
+      "style_token": "35mm with centred symmetrical compositions, flat lateral staging and 90-degree whips, pastel confection palette, patterned wallpaper and miniatures, overhead flat-lay of luggage, chapter title cards, deadpan framing",
+      "negative": "handheld, over-the-shoulder framing, natural chaos, gritty realism, high contrast",
+      "displacement": [
+        "任何室内 → 对称的门厅与花纹电梯",
+        "人物走动 → 正对镜头直线走，横移跟",
+        "对话 → 直接看向画外，语气不变",
+        "动作戏 → 用俯拍平面镜头展示武器清单",
+        "转场 → 字幕卡写章节名"
+      ],
+      "camera": "只用水平横移、90 度快摇、俯拍平面三样；机位永远居中",
+      "audio": "羽管键琴 + 英语旁白念说明书式台词，原对白压低",
+      "best_for": "职场、家族、犯罪（越严肃越好笑）"
+    },
+    {
+      "id": "kurosawa",
+      "label": "黑泽明天气时代剧",
+      "category": "讲座",
+      "alias": ["黑泽明", "武士", "黑白", "罗生门"],
+      "era_region": "战国日本，黑白胶片",
+      "signature": "倾盆雨与风、高对比黑白、长焦群像压缩、三机位同时拍",
+      "positive": "黑泽明风格，高对比黑白质感，强烈自然元素（暴雨、狂风、尘土），动态构图与对角线调度，长焦压缩的群像，戏剧化光影，人性史诗感",
+      "style_token": "high-contrast monochrome on Tanaka stock, torrential rain and wind as physical forces, diagonal blocking, telephoto-compressed crowd shots, three-camera coverage, deep-focus compositions with foreground mud",
+      "negative": "colour, clean studio air, soft romantic light, static tripod framing, modern wardrobe",
+      "displacement": [
+        "现代服装 → 和服与草鞋，或湿透的廉价西装",
+        "办公室 → 驿站/工地板房，风把门吹开",
+        "冲突 → 雨中对峙，谁都不先动",
+        "街道 → 泥泞与风滚的草",
+        "结局 → 长镜头，雨停，人散"
+      ],
+      "camera": "长焦压群像 + 广角前景泥泞；天气必须入画；慢推只用一次",
+      "audio": "太鼓与雨声，去掉配乐，对白靠后站",
+      "best_for": "对峙、群戏、职场"
+    },
+    {
+      "id": "nolan",
+      "label": "诺兰 IMAX",
+      "category": "讲座",
+      "alias": ["诺兰", "IMAX", "星际", "信条"],
+      "era_region": "当代，冷灰",
+      "signature": "大画幅、冷蓝灰、实拍巨物、平行剪辑的时间压力",
+      "positive": "诺兰风格，IMAX 大画幅质感，冷蓝灰色调，极其锐利的画面，深沉严肃的氛围，精密可控的光线，实拍巨物与实景，交叉剪辑拉时间",
+      "style_token": "65mm large-format, cold blue-grey grade, extremely sharp detail in practical sets, hard controlled key light with deep falloff, real-scale physics, cross-cut temporal pressure, minimal handheld",
+      "negative": "warm comedic palette, neon, miniature look, soft focus, pastel",
+      "displacement": [
+        "任何任务 → 变成一场有倒计时的高危行动",
+        "对话 → 人物边做复杂的事边严肃解释规则",
+        "场景 → 空旷的工业空间与混凝土",
+        "音乐 → 持续上升的低频与秒表声",
+        "剪辑 → 三条时间线交替，最后一秒合流"
+      ],
+      "camera": "IMAX 构图（1.43 感），低角度大空间；手持只给追逐",
+      "audio": "保留台词，加次低频脉冲与钟表滴答，音乐在最后一刻全停",
+      "best_for": "日常生活题材（反差最强：做饭变救世行动）"
+    },
+    {
+      "id": "wong",
+      "label": "王家卫",
+      "category": "讲座",
+      "alias": ["王家卫", "重庆森林", "花样年华"],
+      "era_region": "90 年代香港/台北",
+      "signature": "抽帧慢门、肩扛近距、独白念数字与日期、狭小走廊与路灯",
+      "positive": "王家卫风格，慵懒暧昧的氛围，颗粒感胶片与抽帧慢门，step-printing 拖影，狭小走廊与霓虹路灯，超近距肩扛，东方都市孤独美学，画外独白",
+      "style_token": "step-printed 1/8s shutter smears, saturated jade-green walls and red lamps, wide-angle shoulder-held closeness, cramped corridors and rain-slick stairwells, heavy grain, voice-over confessing exact times and numbers",
+      "negative": "clean steady coverage, bright even lighting, wide symmetrical compositions, cheerful tone",
+      "displacement": [
+        "任何场景 → 深夜的快餐店/旅馆走廊/自动贩卖机旁",
+        "对话 → 一半改成画外独白，说一个具体数字（保质期/距离）",
+        "身体 → 手扶墙、侧身而过、点烟不抽",
+        "时间 → 反复强调'那一刻''1997年4月25日下午'这种精确到分钟的措辞",
+        "结局 → 错过，镜头停在空椅子上"
+      ],
+      "camera": "广角贴脸肩扛 + 抽帧；镜子与门框挡一半脸",
+      "audio": "拉丁老歌或口琴 loop 反复，独白压低混响",
+      "best_for": "爱情、擦肩而过、吃饭"
+    },
+    {
+      "id": "tarantino",
+      "label": "昆汀",
+      "category": "讲座",
+      "alias": ["昆汀", "低俗小说", "暴力美学"],
+      "era_region": "架空美国，70s 致敬",
+      "signature": "后备箱视角、chapter 卡、大段废话、突然的血与脚部特写",
+      "positive": "昆汀风格，高对比度，大胆构图，长段闲聊对白，突然爆发的暴力美学，脚部特写与低机位'后备箱视角'，分章节叙事，复古配乐",
+      "style_token": "bold high-contrast grade, long static takes of trivial conversation exploding into sudden violence, trunk-view low angles, feet close-ups, chapter title cards, split-screen, surf-rock needle drops",
+      "negative": "muted naturalism, quiet ambience, single-location continuity, sympathetic framing",
+      "displacement": [
+        "任何会议 → 变成关于无意义话题的长篇对话（占 70% 时长）",
+        "转场 → 黄字章节卡 + 冻结画面",
+        "暴力 → 一枪之后安静三秒再切",
+        "角色 → 给脚一个特写",
+        "场景 → 餐馆/汽车后座/杂货店后屋"
+      ],
+      "camera": "低角度仰拍（后备箱）、缓慢推近、分屏",
+      "audio": "60-70  surf/instrumental needle drop，对白前后各留半秒",
+      "best_for": "对话戏、黑帮、职场"
+    },
+    {
+      "id": "lynch",
+      "label": "大卫·林奇",
+      "category": "讲座",
+      "alias": ["林奇", "双峰", "超现实"],
+      "era_region": "美国西北小镇，无时间",
+      "signature": "红色窗帘房间、倒放的台词、低频嗡鸣、日常表面下的诡异",
+      "positive": "大卫·林奇风格，在平淡日常表象下隐藏诡异梦魇，红色帷幕房间与地砖，缓慢推进的空镜，低频嗡鸣，人物说话略颠倒，霓虹灯管闪烁",
+      "style_token": "red-curtained rooms with chevron floor, slow creeping zooms on empty spaces, flickering tube lights, sub-bass hum, deadpan lines delivered slightly reversed, suburban night with sodium glow",
+      "negative": "bright comedic daylight, fast cutting, explained motivation, warm group energy",
+      "displacement": [
+        "任何办公室 → 加一扇没人解释会打开的门",
+        "对白 → 插入 5 秒完全无关的重复句",
+        "角色 → 说话时不动，声音先于口型",
+        "灯光 → 一半镜头在闪烁",
+        "结局 → 不给答案，直接切黑"
+      ],
+      "camera": "极慢推镜 + 静态对称；红房间固定机位",
+      "audio": "低频持续嗡鸣 + 远处萨克斯，对白混响偏大",
+      "best_for": "悬疑、家庭、日常"
+    },
+    {
+      "id": "zhang-yimou",
+      "label": "张艺谋早期（色彩叙事）",
+      "category": "讲座",
+      "alias": ["张艺谋", "红高粱", "大红灯笼"],
+      "era_region": "民国北方乡村/宅院",
+      "signature": "统治画面的单一红色、仪式化重复动作、黄土与灯笼",
+      "positive": "张艺谋早期风格，极致用色，一种颜色统治整场戏（大红/土黄），强烈构图与仪式感叙事，黄土高坡、大红灯笼、 ritualised repeated labour，逆卷的尘烟",
+      "style_token": "one dominant colour commands each scene (imperial red or loess yellow), ritualised repeated labour movements, strong graphic compositions, lanterns in rows, backlit dust and wheat, wide static tableaux",
+      "negative": "desaturated contemporary grade, glass office, cool nordic light, casual staging",
+      "displacement": [
+        "现代职业 → 变成有等级秩序的家族手艺（染坊/酒坊/宅院）",
+        "日常动作 → 仪式化重复，声音齐整",
+        "服装 → 中式立领与红布",
+        "场景 → 大院、廊下、土路",
+        "情绪 → 不解释，用颜色堆"
+      ],
+      "camera": "大横幅静态画面 + 缓慢横移，人物排成一线",
+      "audio": "唢呐或鼓点，劳动号子，无配乐时只留风",
+      "best_for": "家庭、权力、劳动"
+    },
+    {
+      "id": "telenovela",
+      "label": "拉美电视剧",
+      "category": "地域",
+      "alias": ["巴西", "墨西哥", "telenovela", "拉美"],
+      "era_region": "当代墨西哥城/圣保罗",
+      "signature": "每次反转都给一个瞪眼特写 + 定格 + 音乐重音",
+      "positive": "拉美电视剧质感，暖橙与金，过度曝光的室内灯光，夸张瞪眼特写后定格，戏剧化配乐重音，豪宅与教堂，反派耳光",
+      "style_token": "warm amber studio lighting with blown highlights, rapid punch-ins to wide-eyed close-ups then freeze frame on the reveal, hard musical stabs, marble mansion and church interiors, a slap before every act break",
+      "negative": "understated naturalism, muted grade, long static takes, ambiguity",
+      "displacement": [
+        "任何秘密 → 由一个人在门口偷听发现",
+        "反转 → 瞪眼 + 定格 + 弦乐重音",
+        "家族 → 拥有庄园与一个被隐藏的继承人",
+        "冲突 → 一记耳光结束一场戏",
+        "结尾 → 每集必停在最大悬念"
+      ],
+      "camera": "急推变焦到脸；定格；正反打不留空间",
+      "audio": "每一次情绪波动都有乐池重音，对白略后期配音感",
+      "best_for": "家庭、爱情、遗产"
+    },
+    {
+      "id": "scifi-neon",
+      "label": "银翼杀手 2049",
+      "category": "讲座",
+      "alias": ["赛博朋克", "维伦纽瓦", "未来"],
+      "era_region": "近未来，气候崩坏",
+      "signature": "一种颜色统治一场景（橙/雾蓝）、巨型废弃构筑物、雨与全息广告",
+      "positive": "维伦纽瓦式科幻质感，极简野蛮主义巨物，单一颜色统治画面（拉斯橙或雾蓝），雨与空气粒子，全息广告，逆光剪影，缓慢压迫式运镜",
+      "style_token": "brutalist megastructures in weather-scale particulate, monochromatic scene dominance (Las Vegas orange or cobalt fog), backlit silhouettes, holographic advertisements, slow oppressive dolly moves",
+      "negative": "cosy warm interiors, busy handheld, small human scale, sunny clean air",
+      "displacement": [
+        "城市 → 加一层雾霾与巨型全息",
+        "室内 → 混凝土 + 一整面无景窗落地玻璃",
+        "职业 → 变成某种孤独的记录者/执法者",
+        "雨 → 一直下，衣服永远湿",
+        "对白 → 音量降低，句子变短"
+      ],
+      "camera": "缓慢推轨 + 大远景压人；手持只用一次在情绪爆点",
+      "audio": "合成器低频墙，对白后留很长的混响尾巴",
+      "best_for": "侦探、独白、日常通勤"
+    },
+    {
+      "id": "nordic-noir",
+      "label": "北欧冷案",
+      "category": "地域",
+      "alias": ["北欧", "冰岛", "冷案", "警察"],
+      "era_region": "当代雷克雅未克/哥本哈根",
+      "signature": "极昼或极夜的错乱光线、空旷公路、人物永远穿着厚外套",
+      "positive": "北欧冷案剧质感，去饱和蓝灰与钢色，低角度日光与无影的极昼，空旷公路与苔原，混凝土与羊毛，克制的表演与冷静的画外调查",
+      "style_token": "desaturated steel-blue grade, shadowless midnight-sun or permanent twilight, empty coastal roads and moss fields, concrete and wool, restrained performance, procedural calm",
+      "negative": "warm saturated colour, crowds, bustling nightlife, comedic beats",
+      "displacement": [
+        "任何线索 → 出现在一份纸质档案与一台老电脑里",
+        "车 → 沃尔沃旅行车，公路永远空",
+        "室内 → 白墙 + 极简木家具 + 羊毛毯",
+        "警察 → 两个人，永远意见不同且都不解释",
+        "天气 → 起雾，声音被吸收"
+      ],
+      "camera": "静态宽景放人物很小；缓慢反打；不用手持",
+      "audio": "极简钢琴 + 风声，对白干而小声",
+      "best_for": "悬疑、家庭悲剧"
+    },
+    {
+      "id": "wuxia-cctv90",
+      "label": "90年代央视武侠",
+      "category": "时代",
+      "alias": ["央视", "90年代武侠", "张纪中"],
+      "era_region": "1998 前后，中国",
+      "signature": "真山真水 + 威亚 + 过曝的日光 + 主题曲先唱起来",
+      "positive": "九十年代末央视武侠剧质感，实景山水与明显威亚，过曝的日光与柔光镜，戏曲化身段，大量慢镜回放，片头先起主题曲，配音字正腔圆",
+      "style_token": "late-90s CCTV wuxia TV look, on-location mountains with visible wire work, blown-out daylight with diffusion filter, opera-derived body movement, repeated slow-motion replays, orchestral theme sung over the opening",
+      "negative": "gritty digital realism, muted grade, modern wardrobe, subtle acting",
+      "displacement": [
+        "任何职业 → 变成门派（掌门办公室）",
+        "现代动作 → 加威亚与三次慢镜回放",
+        "室内 → 木梁大殿 + 屏风 + 香炉",
+        "台词 → 半文半白，末尾拖长音",
+        "转场 → 空镜山水 + 笛子过门"
+      ],
+      "camera": "大俯拍全景 + 慢镜；一镜到底的旋转跟打",
+      "audio": "主题曲与笛子过门，配音混响偏大殿感",
+      "best_for": "职场、校园、体育（错位最好笑）"
+    },
+    {
+      "id": "wildwest",
+      "label": "意大利西部片",
+      "category": "讲座",
+      "alias": ["西部片", "莱昂内", "美国西部"],
+      "era_region": "1870 美国西南部/西班牙取景",
+      "signature": "极近特写与极远景交替、口哨主题、风滚草与苍蝇",
+      "positive": "意大利西部片质感，极端特写（眼睛/手/马刺）与极远景交替，土黄与赭石调色，口哨与电吉他配乐，风滚草、苍蝇、烈日，缓慢的拔枪节奏",
+      "style_token": "Leone rhythm cutting between extreme close-ups (eyes, holsters, spurs) and vast wide shots, ochre and sienna grade, whistle and electric-guitar theme, tumbleweed and flies, excruciating draw timing",
+      "negative": "cool urban palette, indoor night, fast modern cutting, technology",
+      "displacement": [
+        "任何争执 → 变成正午街上的对峙",
+        "服装 → 斗篷、帽、马刺、脏胡子",
+        "建筑 → 木栈道、酒馆、水井、教堂白塔",
+        "镜头 → 每 3 秒切到眼睛特写",
+        "声音 → 口哨 + 枪栓 + 苍蝇嗡"
+      ],
+      "camera": "三段式特写交替（广角环境→中景→极特写）；对峙时不剪",
+      "audio": "口哨主题、枪声后 2 秒静默",
+      "best_for": "对峙、复仇、谈判"
+    },
+    {
+      "id": "propaganda-cartoon",
+      "label": "老胶片新闻短片",
+      "category": "媒介",
+      "alias": ["新闻短片", "黑白纪录片", "老电影"],
+      "era_region": "1940-50 新闻院线贴片",
+      "signature": "旁白字正腔圆地介绍小事、画面掉帧与划痕、大标题卡",
+      "positive": "四十年代新闻短片质感，黑白掉帧与竖向划痕，闪烁片门，夸张的大标题卡，一本正经的旁白解说平凡小事，三脚架固定机位",
+      "style_token": "1940s newsreel black-and-white with frame drops and vertical scratches, flickering gate, bold title cards, an earnest transatlantic narrator describing utterly mundane events, locked tripod framing",
+      "negative": "colour, steadicam, sync sound, modern dailies",
+      "displacement": [
+        "任何事件 → 变成'我国/我市'口吻的重大成就报道",
+        "对白 → 全部改成旁白解说",
+        "转场 → 黑底白字卡片：'第二幕'",
+        "画面 → 每 5 秒跳一帧",
+        "人物 → 对镜头挥手、脱帽"
+      ],
+      "camera": "固定机位 + 手摇曲柄变速（快放感）",
+      "audio": "单声道、削峰的旁白，铜管过门，唱片底噪",
+      "best_for": "做饭、上班、遛狗等日常"
+    },
+    {
+      "id": "anime-live",
+      "label": "日漫改真人（低预算版）",
+      "category": "媒介",
+      "alias": ["真人版", "漫改", "日剧真人版"],
+      "era_region": "当代日本，电视台棚拍",
+      "signature": "漫画里的发型用真头发硬做、台词照念原作、字幕条直接写招式名",
+      "positive": "低预算日漫真人化质感，电视台棚拍灯光偏平，漫画发型用真发硬做出来，服装略不合身，字幕条直接写招式名，夸张表演被认真执行",
+      "style_token": "low-budget live-action anime adaptation, flat TV-studio lighting, anime hairstyles attempted with real hair and hairspray, slightly ill-fitting costumes, on-screen name plates for moves, earnest overacting",
+      "negative": "photorealistic everyday look, natural hair, location ambient light, understated performance",
+      "displacement": [
+        "任何动作 → 加一条左下角的招式字幕条",
+        "头发 → 反重力的真发造型",
+        "场景 → 明显是棚搭的学校天台与教室",
+        "对白 → 照念原作句式，人物认真解释自己的招数",
+        "特效 → 干冰与后期叠加的色块，边缘不干净"
+      ],
+      "camera": "平视正打，机位像舞台观众席；重要台词给突然的特写",
+      "audio": "保留原台词，加合成器战斗 BGM 与'必杀'音效，脚步配音略晚",
+      "best_for": "把任何写实片变成漫改现场（也是'真人→动漫'的反向玩法）"
+    }
+  ]
+}

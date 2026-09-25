@@ -21,6 +21,18 @@ class Character:
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
+    def __post_init__(self):
+        # JSON 里读回来是字符串；不转成 datetime，下一次 _save() 会在
+        # isoformat() 上炸掉（'str' object has no attribute 'isoformat'），
+        # 表现为「加过角色之后再也无法登记参考图」。
+        for name in ("created_at", "updated_at"):
+            value = getattr(self, name)
+            if isinstance(value, str):
+                try:
+                    setattr(self, name, datetime.fromisoformat(value))
+                except ValueError:
+                    setattr(self, name, datetime.now())
+
     def to_dict(self) -> dict:
         return {
             "id": self.id,

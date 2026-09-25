@@ -12,5 +12,6 @@
   "base_url": "https://api.deepseek.com/v1",
   "seedance_api_key": "",
   "kling_api_key": "",
-  "comfyui_url": "http://localhost:8188"
+  "comfyui_url": "http://localhost:8188",
+  "zhipu_api_key": "25bb52101a1848aab9fce3a68be40419.6DWDLMWHM31PAmRB"
 }

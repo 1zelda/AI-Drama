@@ -1,22 +1,44 @@
-name: plot_planner
+name: script_planner
 type: llm
 
+# 一句话创意 → 可拍摄的短剧故事大纲。
+# 输出全中文，字段被下游 characters / scenes / storyboard 直接引用。
 prompt: |
-  you are a professional drama writer. Please generate a complete story outline based on the following title:
-  
-  title: {{title}}
-  
-  Please output JSON format:
+  你是资深短剧编剧（红果/番茄/抖音竖屏短剧一线作者）。请基于下面的一句话创意，
+  写一个 1 分钟内能讲完、有爽点的短剧故事大纲。
+
+  创意：{{title}}
+  题材：{{genre}}
+  目标时长：{{duration}}
+  风格：{{style}}
+
+  写作铁律：
+  1. 开篇 3 秒必须丢出冲突或悬念，不许有铺垫和废话。
+  2. 全剧只有一条主线，人物不超过 4 个，场景不超过 3 个（省成本且一致性好）。
+  3. 必须有一个明确的反转或打脸时刻，这是短剧的付费点。
+  4. 结尾留钩子，让观众想看下一集。
+  5. 全中文输出，不要出现英文说明文字。
+
+  严格输出如下 JSON（不要 markdown 代码块，不要额外解释）：
   {
-    \"title\": \"durmama_name\",
-    \"genre\": \"pergen_key\",
-    \"theme\": \"theme_key\",
-    \"synopsis\": \"synopsis_key\",
-    \"hooks\": [\"hook1\", \"hook2\", \"hook3\"],
-    \"ending\": \"ending_description\"
+    "title": "剧名，8 字以内，有点击欲",
+    "genre": "题材标签，如 都市逆袭 / 古风甜宠 / 悬疑复仇",
+    "logline": "一句话梗概，30 字以内",
+    "synopsis": "故事梗概，150 字以内，包含起承转合",
+    "hook": "开篇 3 秒的悬念或冲突，一句话",
+    "twist": "反转/打脸时刻，一句话",
+    "ending": "结尾 + 下集钩子，两句话",
+    "acts": [
+      {"act": 1, "name": "开端", "content": "这一段发生什么，60 字以内"},
+      {"act": 2, "name": "升级", "content": "..."},
+      {"act": 3, "name": "反转", "content": "..."},
+      {"act": 4, "name": "收束", "content": "..."}
+    ],
+    "visual_style": "统一的画面风格描述，20 字以内，如 电影感写实，冷色调，浅景深",
+    "mood": "整体情绪基调，如 紧张压抑转酣畅淋漓"
   }
 
 config:
   model: deepseek-chat
-  temperature: 0.7
-  max_tokens: 2000
+  temperature: 0.8
+  max_tokens: 2500

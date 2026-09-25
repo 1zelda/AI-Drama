@@ -1,0 +1,106 @@
+name: real_storyboard_generator
+type: llm
+
+# 真人剧分镜 —— 这条流水线的枢纽，五个字段喂五个下游节点：
+#   image_prompt → shot_images（首帧）
+#   end_frame_prompt → shot_end_frames（尾帧，默认关闭的可选节点）
+#   video_prompt → shot_videos（运动）
+#   speaker + line → narration（按说话人分音色；line 是干净台词，不带角色名）
+#   subtitle     → final_cut（烧进画面的字幕，对白镜带「角色名：」前缀）
+#
+# 与动漫分镜最大的区别：动漫靠机位 + 漫画符号演出，真人只能靠**表演**和**对白**。
+# 所以这里多出 speaker/line/performance 三个硬字段，并且对白镜有口型同步的前置约束。
+#
+# 上游字段必须写成 {{节点id.字段}}；{{shots}} {{duration}} 来自运行时输入。
+prompt: |
+  你是真人短剧的导演兼分镜师。把下面的剧本拆成 {{shots}} 个镜头，
+  每镜约 {{duration}} 里的等分时长，竖屏，实拍质感。
+
+  剧名：{{script_planner.title}}
+  梗概：{{script_planner.synopsis}}
+  开篇钩子：{{script_planner.hook}}
+  反转：{{script_planner.twist}}
+  结尾与钩子：{{script_planner.ending}} / {{script_planner.next_hook}}
+  节拍（含每拍必须说的台词）：{{script_planner.beats}}
+  传播金句：{{script_planner.key_lines}}
+  沉默戏（不说话要有戏的地方）：{{script_planner.silences}}
+  角色与音色与表演习惯：{{character_generator.characters}}
+  场景与光源：{{scene_generator.scenes}}
+  摄影规格：{{style_bible.style_token}}
+  运镜白名单：{{style_bible.camera_rules}}
+  主光方案：{{style_bible.lighting}}
+
+  真人分镜铁律（违反会直接导致脸崩、口型对不上或成本翻倍）：
+  1. 一镜只做一件事，video_prompt 里只允许一个运动动词。
+     禁止「一边…一边…」「然后…接着…」。想连续动作就拆镜。
+  2. 真人大幅动作一律禁止：转身、奔跑、跳跃、打斗接触、起身、摔倒、开门手势都不许写。
+     真人的夸张只能来自这三样：
+     - 表演微动作（micro_action）：喉结滚动、指节发白、呼吸变浅、睫毛颤、
+       吞咽、眼神移开、嘴角抽动、攥紧衣角（手只做这一个静止动作，不挥舞）
+     - 机位微动：固定机位 / slow push in / slow pull out / subtle pan / rack focus
+     - 剪辑节奏：说前半句切听者反应，后半句切回说话人
+  3. camera_move 只能从上面那个运镜白名单里选，白名单外的写法模型跑不出来。
+  4. 对白镜（speaker 不是"旁白"）必须满足口型同步四条件，否则不要写成对白镜：
+     ① 说话人正面或 3/4 侧面出镜，嘴部不被手、杯子、麦克风、头发遮挡；
+     ② 画面里只有这一名说话人，另一个人在画外或只给后脑/侧影；
+     ③ 近景或中近景（人物头部占画面高度 25% 以上）；
+     ④ 本镜 line 必须能在镜头时长内说完（中文按每秒 4 字算，5 秒 ≤18 字）。
+  5. 两人对话必须正反打，一镜一人开口。同框两人同时说话是最大的穿帮来源。
+  6. 每 2-3 个对白镜之间插一个 reaction 镜（听的人，speaker 写"旁白"，
+     line 是一句内心独白），短剧的节奏就靠它。
+  7. line 是**纯台词**，不带角色名、不带引号、不带括号说明、≤18 字、口语带态度。
+     subtitle 是**画面字幕**：对白镜写成「角色名：line 原文」，旁白镜直接写旁白文本，
+     12-24 字。两个字段内容相关但不能合并 —— 下游一个用来配音，一个用来烧字幕。
+  8. speaker 只允许两类值：上面 characters 里的角色原名（一字不差），或"旁白"。
+     引擎靠它查音色，写错就退成默认男声，全剧三个人一个嗓子。
+  9. image_prompt 用英文，结构固定：
+     角色形象锚点（**逐字照抄** characters 里该角色 image_prompt 原文，不改写不省略）
+     + 本镜姿势与表演状态 + 场景锚点（**逐字照抄** scenes 里对应场景的 image_prompt）
+     + 景别与焦段 + 光源方向（照抄该场景 light_source 的英文对应）。
+     不写画风词和画质词（系统会在最前面统一拼 style_token，重复会打架）。
+  10. 手部纪律：不写手部特写、不写手指数量。手入镜时只允许一个静止动作
+      （端着杯子 / 手放在桌上）。手指畸形是写实风第一大硬伤。
+  11. 画面里不出现任何可读文字（招牌、手机屏、文件、包装），一律写 blank signage。
+  12. 同框人物 ≤2。**每个镜头都必须有非空 line**，包括沉默镜和无人对白的空镜：
+      配音是按镜头序号对齐贴到画面上的，中间空一路，后面所有台词就会整体错位贴到
+      别人的镜头上。沉默镜写成第一人称内心独白（≤14 字，speaker 填"旁白"）；
+      空镜写一句环境或时间交代（speaker 同样填"旁白"）。
+      沉默戏（silences）必须至少占 1 个镜头，那一镜画面里人物不说话、只做微动作，
+      声音走内心独白。
+  13. shot_type 只能从这五个值里选一个（引擎靠它选模型）：
+     character_closeup 人物面部特写 / character_action 人物上半身或全身 /
+     scene 无人物空镜 / screen_ui 道具或屏幕特写 / fx_transition 纯转场特效。
+  14. end_frame_prompt 必须是**完整可独立生图**的英文提示词，与 image_prompt 同一构图、
+      同一人物位置、同一背景，只改「这一镜要发生的那一点变化」（表情推进 / 光线 /
+      景别略紧）。写成"同上只改 X"是错的。本镜若完全静止就给空字符串。
+  15. 第一镜就是钩子台词的正面特写，最后一镜留悬念（不给答案）。
+      不许出现两个连续同景别同机位的镜头。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
+  {
+    "shots": [
+      {
+        "no": 1,
+        "shot_type": "character_closeup",
+        "characters": ["本镜出镜的角色名，无人物则 []"],
+        "scene_id": "scene_01",
+        "duration": 5,
+        "framing": "近景 / 中近景 / 中景 / 全景，附焦段如 50mm",
+        "camera_move": "固定机位 或 slow push in 或 rack focus（只能取白名单值）",
+        "speaker": "林晚",
+        "line": "你先走，我随后就到",
+        "subtitle": "林晚：你先走，我随后就到",
+        "micro_action": "一个可拍的微动作，如 喉结滚动一下",
+        "performance": "这一镜的潜台词，10 字以内，如 强装镇定",
+        "image_prompt": "english first frame prompt with verbatim character and scene anchors",
+        "end_frame_prompt": "english last frame prompt, same composition one change, or empty string",
+        "video_prompt": "static camera, one specific change, rest completely still, photoreal motion, 5 seconds",
+        "mood": "情绪，6 字以内"
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.7
+  max_tokens: 7500

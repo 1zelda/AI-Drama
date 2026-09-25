@@ -1,9 +1,16 @@
 import os
 import json
+from pathlib import Path
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
-load_dotenv()
+for _candidate in (Path(__file__).resolve().parents[2] / ".env",
+                   Path(__file__).resolve().parents[3] / ".env"):
+    if _candidate.exists():
+        load_dotenv(_candidate, override=False)
+        break
+else:
+    load_dotenv()
 
 client = AsyncOpenAI(
     api_key=os.getenv("OPENAI_API_KEY", os.getenv("DEEPSEEK_API_KEY", "")),

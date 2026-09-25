@@ -40,3 +40,5 @@ Thumbs.db
 # ComfyUI
 ComfyUI/
 */ComfyUI/
+# 大模型文件不入库(205MB,超过GitHub限制)
+backend/models/

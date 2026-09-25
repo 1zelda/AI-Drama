@@ -1,0 +1,36 @@
+name: scene_generator
+type: llm
+
+# 大纲 → 场景设定。同一场景的所有镜头共用 scene.image_prompt 前缀，
+# 这样切镜头时背景不会跳，是「像样」的关键之一。
+prompt: |
+  你是短剧美术指导。基于下面的故事，列出全部场景。
+
+  故事梗概：{{script_planner.synopsis}}
+  全剧画面风格：{{script_planner.visual_style}}
+  角色设定：{{character_generator.characters}}
+
+  设定铁律：
+  1. 场景不超过 3 个，能合并的就合并（省钱且一致性好）。
+  2. image_prompt 是英文，描述「空景」：空间、材质、主光源、色调、画质词。
+     不要出现人物，不要出现动作。
+  3. 每个场景的光影和色调要能区分开（如 冷蓝办公室 / 暖黄居酒屋）。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
+  {
+    "scenes": [
+      {
+        "id": "scene_01",
+        "name": "场景中文名，如 深夜便利店",
+        "time_of_day": "day / night / dusk / 阴天",
+        "description": "中文环境描述，40 字以内",
+        "mood": "情绪氛围，10 字以内",
+        "image_prompt": "英文空景提示词，40-60 词：空间+材质+主光+色调+画质，例：interior of a small convenience store at night, fluorescent ceiling lights, rows of shelves, cold blue and white color grading, cinematic, highly detailed, 4k"
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.6
+  max_tokens: 3000

@@ -1,53 +1,109 @@
-'use client'
-import React, { useState, useEffect } from 'react'
+"use client";
+
+/**
+ * 工作流目录：列出后端 config/workflows/ 下可用的流水线。
+ *
+ * 旧版这里有个「执行」按钮，POST 到 /api/workflows/execute —— 那个接口根本不存在，
+ * 点了必然 404。执行统一走流水线页（有 SSE 进度、产物预览），这里只负责列目录和引导。
+ */
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { api } from "@/lib/api";
+import TopNav from "@/components/TopNav";
+
+type Wf = { name: string };
 
 export default function WorkflowsPage() {
-  const [workflows, setWorkflows] = useState<any[]>([])
-  const [selected, setSelected] = useState<string | null>(null)
-  const [output, setOutput] = useState<any>(null)
+  const [workflows, setWorkflows] = useState<Wf[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch('/api/workflows')
-      .then(res => res.json())
-      .then(data => setWorkflows(data))
-  }, [])
-
-  const executeWorkflow = async (name: string) => {
-    const res = await fetch('/api/workflows/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workflow: name, input: { title: '测试标题' } })
-    })
-    const data = await res.json()
-    setSelected(name)
-    setOutput(data)
-  }
+    let alive = true;
+    api<{ workflows: string[] }>("/api/runs/")
+      .then((d) => {
+        if (!alive) return;
+        setWorkflows((d.workflows || []).map((n) => ({ name: n })));
+      })
+      .catch((e) => alive && setError(e.message))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', color: '#fff', padding: '2rem' }}>
-      <h1 style={{ fontSize: '2rem', marginBottom: '2rem' }}>工作流管理</h1>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-        <div>
-          <h2>可用工作流</h2>
-          {workflows.map((w: any) => (
-            <div key={w.name} style={{ padding: '1rem', background: '#1a1a1a', borderRadius: '8px', marginBottom: '1rem' }}>
-              <h3>{w.name}</h3>
-              <p style={{ color: '#888', fontSize: '0.9rem' }}>{w.description}</p>
-              <button onClick={() => executeWorkflow(w.name)} style={{ marginTop: '0.5rem', padding: '0.5rem 1rem', background: '#6366f1', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                执行
-              </button>
-            </div>
-          ))}
-        </div>
-        <div>
-          <h2>执行结果</h2>
-          {output && (
-            <pre style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '8px', overflow: 'auto', maxHeight: '600px' }}>
-              {JSON.stringify(output, null, 2)}
-            </pre>
-          )}
-        </div>
+    <main style={{ minHeight: "100vh", background: "#0a0a0a", color: "#fff" }}>
+      <TopNav
+        title="工作流目录"
+        subtitle="执行请到流水线页，那里有实时进度和产物预览"
+        actions={
+          <Link
+            href="/pipeline"
+            style={{
+              padding: "0.4rem 0.9rem",
+              background: "#6366f1",
+              color: "#fff",
+              borderRadius: 9,
+              textDecoration: "none",
+              fontSize: "0.78rem",
+              fontWeight: 600,
+            }}
+          >
+            去流水线
+          </Link>
+        }
+      />
+
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "1.75rem 1.25rem 4rem" }}>
+        {error && (
+          <div
+            style={{
+              padding: "0.7rem 1rem",
+              background: "#2a1214",
+              border: "1px solid #7f1d1d",
+              borderRadius: 10,
+              color: "#fca5a5",
+              fontSize: "0.82rem",
+              marginBottom: "1.25rem",
+            }}
+          >
+            ⚠️ {error}
+          </div>
+        )}
+
+        {loading ? (
+          <p style={{ color: "#666", fontSize: "0.85rem" }}>加载中…</p>
+        ) : workflows.length === 0 && !error ? (
+          <p style={{ color: "#666", fontSize: "0.85rem" }}>
+            没有找到工作流（backend/config/workflows/*.json）
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: "0.75rem" }}>
+            {workflows.map((w) => (
+              <Link
+                key={w.name}
+                href="/pipeline"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "0.9rem 1.1rem",
+                  background: "#111",
+                  border: "1px solid #232323",
+                  borderRadius: 12,
+                  textDecoration: "none",
+                  color: "#fff",
+                }}
+              >
+                <span style={{ fontSize: "1.1rem" }}>🧩</span>
+                <code style={{ flex: 1, fontSize: "0.88rem", color: "#c7d2fe" }}>{w.name}</code>
+                <span style={{ fontSize: "0.75rem", color: "#666" }}>在流水线中打开 →</span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
-  )
+    </main>
+  );
 }

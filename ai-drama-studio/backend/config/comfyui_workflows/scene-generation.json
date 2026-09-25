@@ -1,6 +1,6 @@
 {
   "name": "scene-generation",
-  "description": "Generate scene/storyboard images",
+  "description": "分镜/场景图生成（SD1.5 纯文生图）。场景 prompt 拆分建议：不变部分(场景+风格+角色卡)写在 system 前缀，可变部分(机位+动作)由节点 prompt 提供，seed 递增保证同场景风格连续。",
   "type": "image",
   "output_node": "7",
   "nodes": {
@@ -13,53 +13,35 @@
     "2": {
       "class_type": "CLIPTextEncode",
       "inputs": {
-        "clip": [
-          "1",
-          0
-        ],
+        "clip": ["1", 0],
         "text": "{{positive_prompt}}"
       }
     },
     "3": {
       "class_type": "CLIPTextEncode",
       "inputs": {
-        "clip": [
-          "1",
-          0
-        ],
-        "text": "bad anatomy, bad proportions, deformed, ugly, blurry"
+        "clip": ["1", 0],
+        "text": "{{negative_prompt}}"
       }
     },
     "4": {
       "class_type": "EmptyLatentImage",
       "inputs": {
-        "width": 1280,
-        "height": 720,
+        "width": "{{width}}",
+        "height": "{{height}}",
         "batch_size": 1
       }
     },
     "5": {
       "class_type": "KSampler",
       "inputs": {
-        "model": [
-          "1",
-          0
-        ],
-        "positive": [
-          "2",
-          0
-        ],
-        "negative": [
-          "3",
-          0
-        ],
-        "latent_image": [
-          "4",
-          0
-        ],
+        "model": ["1", 0],
+        "positive": ["2", 0],
+        "negative": ["3", 0],
+        "latent_image": ["4", 0],
         "seed": "{{seed}}",
-        "steps": 30,
-        "cfg": 7.0,
+        "steps": "{{steps}}",
+        "cfg": "{{cfg}}",
         "sampler_name": "euler_ancestral",
         "scheduler": "normal"
       }
@@ -67,25 +49,25 @@
     "6": {
       "class_type": "VAEDecode",
       "inputs": {
-        "samples": [
-          "5",
-          0
-        ],
-        "vae": [
-          "1",
-          1
-        ]
+        "samples": ["5", 0],
+        "vae": ["1", 1]
       }
     },
     "7": {
       "class_type": "SaveImage",
       "inputs": {
         "filename_prefix": "scene",
-        "images": [
-          "6",
-          0
-        ]
+        "images": ["6", 0]
       }
     }
+  },
+  "params": {
+    "positive_prompt": { "node": "2", "field": "text" },
+    "negative_prompt": { "node": "3", "field": "text" },
+    "width": { "node": "4", "field": "width" },
+    "height": { "node": "4", "field": "height" },
+    "seed": { "node": "5", "field": "seed" },
+    "steps": { "node": "5", "field": "steps" },
+    "cfg": { "node": "5", "field": "cfg" }
   }
 }

@@ -1,0 +1,46 @@
+name: anime_scene_generator
+type: llm
+
+# 动漫场景设定 + 空镜。场景图是全剧的「背景板」：同场景的镜头共用 scene.image_prompt，
+# 切镜时背景不跳。空镜图强制收尾那句「不出现人物/文字/水印」是硬要求 ——
+# 动漫背景里一旦长出人或者长出假字，这张图就废了。
+prompt: |
+  你是动漫背景美术（背景监督）。为这部动漫短剧列出全部场景并给出空镜提示词。
+
+  剧名：{{script_planner.title}}
+  梗概：{{script_planner.synopsis}}
+  画风圣经：{{style_bible}}
+  整体画面风格：{{script_planner.visual_style}}
+
+  场景铁律：
+  1. 场景不超过 3 个，能合并就合并（动漫背景是逐张画的，景多必崩）。
+  2. image_prompt 用英文，45-70 词，只写空景：空间结构 / 材质 / 主光源方向与颜色 /
+     时间天气 / 色板倾向 / 动漫背景特有的处理方式（如 背景虚化网点、天空渐变）。
+     禁止出现人物，禁止出现动作，禁止写画风词（画风由 style_token 统一提供）。
+  3. 每个场景要有可辨识的「标志物」（一个就够，如 便利店门口的自动贩卖机），
+     它是跨镜头判定「这还是同一个地方」的锚点，写进 landmark 字段。
+  4. 三个场景的光影必须能区分开（冷蓝夜 / 暖黄黄昏 / 高光白天），
+     否则观众分不清转场去了哪儿。
+  5. interior/exterior 与 camera_view 会被首尾帧节点用来保持视角连续，如实填。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
+  {
+    "scenes": [
+      {
+        "id": "scene_01",
+        "name": "场景中文名，如 深夜天台",
+        "time_of_day": "night / day / dusk / 阴天",
+        "interior": true,
+        "camera_view": "这一场景常用的取景方向，如 面向城市天际线",
+        "landmark": "标志物，10 字以内",
+        "description": "中文环境描述，40 字以内",
+        "mood": "情绪氛围，10 字以内",
+        "image_prompt": "english empty-scene prompt, 45-70 words, no people, no text"
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.6
+  max_tokens: 2600

@@ -1,31 +1,73 @@
 {
   "name": "standard-drama",
-  "description": "��׼�̾����ɹ�����",
-  "version": "1.0.0",
+  "description": "标准短剧七段流水线：剧本 → 角色资产 → 场景资产 → 分集 → 分镜 → 生图 → 生视频 → 合成。角色/场景资产只生成一次全剧复用，是保证一致性的关键。生图/生视频均可用 provider 切换本地 ComfyUI 与云端 API。",
+  "version": "2.1.0",
   "nodes": {
     "script_planner": {
       "type": "llm",
       "provider": "deepseek",
       "model": "deepseek-chat",
-      "prompt_template": "scripts/plot.yaml",
+      "prompt_template": "plot.yaml",
       "output": "script"
     },
     "character_generator": {
       "type": "llm",
       "provider": "deepseek",
       "model": "deepseek-chat",
-      "prompt_template": "scripts/characters.yaml",
+      "prompt_template": "characters.yaml",
       "depends_on": [
         "script_planner"
       ],
       "output": "characters"
     },
+    "character_assets": {
+      "type": "image",
+      "prompt": "{{image_prompt}}, character design sheet, full body, plain white background",
+      "shot_type": "character_closeup",
+      "workflow_file": "character-sheet.json",
+      "depends_on": [
+        "character_generator"
+      ],
+      "foreach": "characters",
+      "width": 768,
+      "height": 1024,
+      "steps": 30,
+      "cfg": 7.0,
+      "output": "character_images"
+    },
+    "scene_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "scenes.yaml",
+      "depends_on": [
+        "script_planner",
+        "character_generator"
+      ],
+      "output": "scenes"
+    },
+    "scene_assets": {
+      "type": "image",
+      "prompt": "{{image_prompt}}, no people, no text",
+      "shot_type": "scene",
+      "workflow_file": "scene-generation.json",
+      "depends_on": [
+        "scene_generator"
+      ],
+      "foreach": "scenes",
+      "width": 1280,
+      "height": 720,
+      "steps": 30,
+      "cfg": 7.0,
+      "output": "scene_images"
+    },
     "episode_planner": {
       "type": "llm",
       "provider": "deepseek",
       "model": "deepseek-chat",
-      "prompt_template": "scripts/episodes.yaml",
+      "prompt_template": "episodes.yaml",
       "depends_on": [
+        "script_planner",
         "character_generator"
       ],
       "output": "episodes"
@@ -34,35 +76,50 @@
       "type": "llm",
       "provider": "deepseek",
       "model": "deepseek-chat",
-      "prompt_template": "scripts/storyboard.yaml",
+      "prompt_template": "storyboard.yaml",
       "depends_on": [
-        "episode_planner"
+        "script_planner",
+        "episode_planner",
+        "character_generator",
+        "scene_generator"
       ],
       "output": "storyboard"
     },
-    "image_gen": {
+    "shot_images": {
       "type": "image",
-      "provider": "kling",
-      "model": "kling-v1",
+      "prompt": "{{image_prompt}}",
+      "shot_type": "character_action",
+      "workflow_file": "scene-generation.json",
       "depends_on": [
-        "storyboard_generator"
+        "storyboard_generator",
+        "character_generator",
+        "scene_generator"
       ],
-      "batch_size": 10,
-      "output": "reference_images"
+      "foreach": "storyboard.shots",
+      "width": 1280,
+      "height": 720,
+      "steps": 30,
+      "cfg": 7.0,
+      "output": "shot_images"
     },
-    "video_gen": {
+    "shot_videos": {
       "type": "video",
-      "provider": "seedance",
-      "model": "seedance-2.0",
+      "prompt": "{{video_prompt}}",
+      "shot_type": "character_action",
       "depends_on": [
-        "image_gen"
+        "storyboard_generator",
+        "shot_images"
       ],
+      "foreach": "shot_images",
+      "first_frame_from": "shot_images",
+      "seconds": 5,
+      "resolution": "720p",
       "output": "videos"
     },
     "video_stitch": {
       "type": "ffmpeg",
       "depends_on": [
-        "video_gen"
+        "shot_videos"
       ],
       "output": "final_video"
     }

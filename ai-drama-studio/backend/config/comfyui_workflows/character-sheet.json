@@ -1,6 +1,6 @@
 {
   "name": "character-sheet",
-  "description": "Generate character reference sheets",
+  "description": "角色三视图/定妆照（SD1.5 纯文生图，任何 ComfyUI 都能跑）。配合固定 seed 与角色卡描述可保证基础一致性；需要锁脸时改用 character-sheet-ipadapter.json。",
   "type": "image",
   "output_node": "7",
   "nodes": {
@@ -13,53 +13,35 @@
     "2": {
       "class_type": "CLIPTextEncode",
       "inputs": {
-        "clip": [
-          "1",
-          0
-        ],
-        "text": "full body character reference sheet, front view and side view, neutral expression, white background, detailed face"
+        "clip": ["1", 0],
+        "text": "{{positive_prompt}}"
       }
     },
     "3": {
       "class_type": "CLIPTextEncode",
       "inputs": {
-        "clip": [
-          "1",
-          0
-        ],
-        "text": "bad anatomy, bad proportions, deformed, ugly, blurry"
+        "clip": ["1", 0],
+        "text": "{{negative_prompt}}"
       }
     },
     "4": {
       "class_type": "EmptyLatentImage",
       "inputs": {
-        "width": 768,
-        "height": 1024,
+        "width": "{{width}}",
+        "height": "{{height}}",
         "batch_size": 1
       }
     },
     "5": {
       "class_type": "KSampler",
       "inputs": {
-        "model": [
-          "1",
-          0
-        ],
-        "positive": [
-          "2",
-          0
-        ],
-        "negative": [
-          "3",
-          0
-        ],
-        "latent_image": [
-          "4",
-          0
-        ],
-        "seed": 42,
-        "steps": 30,
-        "cfg": 7.0,
+        "model": ["1", 0],
+        "positive": ["2", 0],
+        "negative": ["3", 0],
+        "latent_image": ["4", 0],
+        "seed": "{{seed}}",
+        "steps": "{{steps}}",
+        "cfg": "{{cfg}}",
         "sampler_name": "euler_ancestral",
         "scheduler": "normal"
       }
@@ -67,25 +49,25 @@
     "6": {
       "class_type": "VAEDecode",
       "inputs": {
-        "samples": [
-          "5",
-          0
-        ],
-        "vae": [
-          "1",
-          1
-        ]
+        "samples": ["5", 0],
+        "vae": ["1", 1]
       }
     },
     "7": {
       "class_type": "SaveImage",
       "inputs": {
         "filename_prefix": "character",
-        "images": [
-          "6",
-          0
-        ]
+        "images": ["6", 0]
       }
     }
+  },
+  "params": {
+    "positive_prompt": { "node": "2", "field": "text" },
+    "negative_prompt": { "node": "3", "field": "text" },
+    "width": { "node": "4", "field": "width" },
+    "height": { "node": "4", "field": "height" },
+    "seed": { "node": "5", "field": "seed" },
+    "steps": { "node": "5", "field": "steps" },
+    "cfg": { "node": "5", "field": "cfg" }
   }
 }

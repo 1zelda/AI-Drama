@@ -1,0 +1,111 @@
+{
+  "name": "drama-pro",
+  "description": "一键成片流水线：创意 → 剧本 → 人物/场景设定 → 分镜 → 生图 → 生视频 → 配音 → 合成成片（烧字幕+垫BGM）。生图/生视频/LLM 通道均自动挑选当前已配置且免费的供应商，未配置时在节点上直接给出中文提示。",
+  "version": "3.0.0",
+  "nodes": {
+    "script_planner": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "plot.yaml",
+      "output": "script"
+    },
+    "character_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "characters.yaml",
+      "depends_on": ["script_planner"],
+      "output": "characters"
+    },
+    "scene_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "scenes.yaml",
+      "depends_on": ["script_planner", "character_generator"],
+      "output": "scenes"
+    },
+    "storyboard_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "storyboard.yaml",
+      "depends_on": ["script_planner", "character_generator", "scene_generator"],
+      "output": "storyboard"
+    },
+    "shot_images": {
+      "type": "image",
+      "prompt": "{{image_prompt}}",
+      "depends_on": ["storyboard_generator"],
+      "foreach": "storyboard.shots",
+      "width": 768,
+      "height": 1344,
+      "character_refs": true,
+      "character_refs_max": 3,
+      "concurrency": 2,
+      "qc": {
+        "enabled": true,
+        "threshold": 6,
+        "max_attempts": 2,
+        "prompt_template": "qc_vision.yaml"
+      },
+      "output": "shot_images"
+    },
+    "narration": {
+      "type": "tts",
+      "engine": "edge",
+      "voice": "zh-CN-YunxiNeural",
+      "rate": "+0%",
+      "text_field": "subtitle",
+      "depends_on": ["storyboard_generator"],
+      "foreach": "storyboard.shots",
+      "concurrency": 2,
+      "output": "narration"
+    },
+    "shot_videos": {
+      "type": "video",
+      "prompt": "{{video_prompt}}",
+      "depends_on": ["storyboard_generator", "shot_images"],
+      "foreach": "storyboard.shots",
+      "first_frame_from": "shot_images",
+      "tail_frame_from_prev": true,
+      "seconds": 5,
+      "resolution": "720p",
+      "output": "videos"
+    },
+    "final_cut": {
+      "type": "postprocess",
+      "depends_on": ["script_planner", "shot_videos", "narration"],
+      "from": ["shot_videos"],
+      "voices_from": ["narration"],
+      "subtitles_from": ["narration"],
+      "subtitle_field": "text",
+      "width": 720,
+      "height": 1280,
+      "fps": 30,
+      "fit": "contain",
+      "burn_subtitle": true,
+      "crossfade": 0.3,
+      "crf": 20,
+      "preset": "veryfast",
+      "bgm_gain_db": -20,
+      "voice_gain_db": 2,
+      "title_card": "{{script_planner.title}}",
+      "title_card_sub": "",
+      "end_card": "未完待续",
+      "end_card_sub": "关注我，看下一集",
+      "card_seconds": 2.5,
+      "trim_badge": true,
+      "filename": "final.mp4",
+      "output": "final_video"
+    }
+  },
+  "execution": {
+    "parallel": false,
+    "retry": 2,
+    "timeout": 900,
+    "concurrency": 1,
+    "heartbeat_interval": 10
+  }
+}

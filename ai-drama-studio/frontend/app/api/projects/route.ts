@@ -1,13 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ProjectStore } from '@/lib/store';
+import { NextRequest } from "next/server";
+import { forward } from "@/lib/backend";
 
 export async function GET() {
-  const projects = ProjectStore.list();
-  return NextResponse.json(projects);
+  return forward("/api/projects/");
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const project = ProjectStore.create(body.title, body.description || '');
-  return NextResponse.json(project);
+  const body = await req.json().catch(() => ({}));
+  if (!body?.title) {
+    return Response.json({ error: "缺少标题" }, { status: 400 });
+  }
+  return forward("/api/projects/", {
+    method: "POST",
+    body: { title: body.title, description: body.description || "", genre: body.genre || "" },
+  });
 }

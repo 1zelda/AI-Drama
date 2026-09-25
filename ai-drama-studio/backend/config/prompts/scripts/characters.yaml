@@ -1,28 +1,42 @@
 name: character_generator
 type: llm
 
+# 大纲 → 角色设定。image_prompt 是全剧复用的角色形象锚点，
+# 后面每个镜头的生图提示词都会拼上它，这是保证人物一致性的唯一廉价手段。
+# 上游字段必须写成 {{节点id.字段}}：引擎只认这种点号引用，
+# 光写 {{synopsis}} 取不到，提示词里会留下原样的大括号。
 prompt: |
-  Based on the following story, generate character settings:
-  
-  Story synopsis: {{synopsis}}
-  Genre: {{genre}}
-  
-  Please output JSON format:
+  你是短剧人物设定师。基于下面的故事大纲，提炼出登场角色。
+
+  故事梗概：{{script_planner.synopsis}}
+  剧名：{{script_planner.title}}
+  画面风格：{{script_planner.visual_style}}
+
+  设定铁律：
+  1. 角色不超过 4 个，只保留推动主线的。
+  2. image_prompt 必须是英文，且只包含「不变特征」：年龄感、脸型、发型、发色、
+     瞳色、上衣、下装、配色。不要写动作、表情、场景、镜头。
+  3. 每个角色的主色调要拉开（如一人暖橙一人冷蓝），避免多人在同一镜头里混成一片。
+  4. 中文描述部分照常用中文。
+
+  严格输出如下 JSON（不要 markdown 代码块）：
   {
     "characters": [
       {
-        "name": "character_name",
-        "role": "protagonist/antagonist",
-        "age": 25,
-        "personality": "personality_description",
-        "appearance": "appearance_description",
-        "costume": "costume_style",
-        "relationships": ["relationship"]
+        "name": "角色名，2-3 字",
+        "role": "主角 / 反派 / 配角",
+        "age": 28,
+        "personality": "性格关键词，10 字以内",
+        "appearance": "中文外貌描述，30 字以内",
+        "costume": "中文服装描述，20 字以内",
+        "color": "主色调，如 藏青 / 米白 / 暗红",
+        "image_prompt": "英文形象锚点，40-60 词，只写不变特征，例：a 28 year old east asian man, short black hair, sharp jawline, dark navy trench coat, white shirt, cold expression",
+        "voice": "建议音色：zh-CN-YunxiNeural / zh-CN-XiaoxiaoNeural / zh-CN-YunjianNeural"
       }
     ]
   }
 
 config:
   model: deepseek-chat
-  temperature: 0.5
+  temperature: 0.6
   max_tokens: 3000

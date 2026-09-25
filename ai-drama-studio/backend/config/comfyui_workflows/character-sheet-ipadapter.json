@@ -1,0 +1,105 @@
+{
+  "name": "character-sheet-ipadapter",
+  "description": "角色定妆照 + IP-Adapter FaceID 锁脸：上传一张已定妆的角色参考图，后续所有分镜沿用同一张脸。需要 ComfyUI_IPAdapter_plus 插件与 ip-adapter-faceid_sd15 模型（含 lora）。机器上没有该插件时会预检失败，可退回 character-sheet.json。",
+  "type": "image",
+  "output_node": "7",
+  "nodes": {
+    "1": {
+      "class_type": "CheckpointLoaderSimple",
+      "inputs": {
+        "ckpt_name": "realisticVisionV60_v60B1_v51VAE.safetensors"
+      }
+    },
+    "2": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "clip": ["1", 0],
+        "text": "{{positive_prompt}}"
+      }
+    },
+    "3": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "clip": ["1", 0],
+        "text": "{{negative_prompt}}"
+      }
+    },
+    "8": {
+      "class_type": "LoadImage",
+      "inputs": {
+        "image": "{{reference_image}}"
+      }
+    },
+    "9": {
+      "class_type": "IPAdapterModelLoader",
+      "inputs": {
+        "ipadapter_file": "ip-adapter-faceid_sd15.bin"
+      }
+    },
+    "10": {
+      "class_type": "CLIPVisionLoader",
+      "inputs": {
+        "clip_name": "CLIP-ViT-H-14-laion2B-s32B-b79K.safetensors"
+      }
+    },
+    "11": {
+      "class_type": "IPAdapterFaceID",
+      "inputs": {
+        "model": ["1", 0],
+        "ipadapter": ["9", 0],
+        "clip_vision": ["10", 0],
+        "image": ["8", 0],
+        "weight": 0.85,
+        "start_at": 0.0,
+        "end_at": 1.0,
+        "combine_embeds": "concat"
+      }
+    },
+    "4": {
+      "class_type": "EmptyLatentImage",
+      "inputs": {
+        "width": "{{width}}",
+        "height": "{{height}}",
+        "batch_size": 1
+      }
+    },
+    "5": {
+      "class_type": "KSampler",
+      "inputs": {
+        "model": ["11", 0],
+        "positive": ["2", 0],
+        "negative": ["3", 0],
+        "latent_image": ["4", 0],
+        "seed": "{{seed}}",
+        "steps": "{{steps}}",
+        "cfg": "{{cfg}}",
+        "sampler_name": "euler_ancestral",
+        "scheduler": "normal"
+      }
+    },
+    "6": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": ["5", 0],
+        "vae": ["1", 1]
+      }
+    },
+    "7": {
+      "class_type": "SaveImage",
+      "inputs": {
+        "filename_prefix": "character_ipadapter",
+        "images": ["6", 0]
+      }
+    }
+  },
+  "params": {
+    "positive_prompt": { "node": "2", "field": "text" },
+    "negative_prompt": { "node": "3", "field": "text" },
+    "reference_image": { "node": "8", "field": "image" },
+    "width": { "node": "4", "field": "width" },
+    "height": { "node": "4", "field": "height" },
+    "seed": { "node": "5", "field": "seed" },
+    "steps": { "node": "5", "field": "steps" },
+    "cfg": { "node": "5", "field": "cfg" }
+  }
+}

@@ -1,16 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ProjectStore } from '@/lib/store';
-import { chatWithPlanner } from '@/lib/llm';
+import { NextRequest } from "next/server";
+import { forward } from "@/lib/backend";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { message } = await req.json();
-  const project = ProjectStore.get(id);
-  if (!project) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  try {
-    const result = await chatWithPlanner(project, message);
-    return NextResponse.json(result);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
-  }
+  const body = await req.json().catch(() => ({}));
+  return forward(`/api/projects/${id}/chat`, {
+    method: "POST",
+    body: { message: body.message || "", context: body.context },
+  });
 }
