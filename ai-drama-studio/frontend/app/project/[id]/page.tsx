@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Send, Sparkles, CheckCircle, XCircle, Play, Settings } from "lucide-react"
+import { ArrowLeft, Send, Sparkles, CheckCircle, XCircle, Play, Settings, Image, Film, Users, Clapperboard } from "lucide-react"
 
 export default function ProjectPage() {
   const params = useParams()
@@ -16,6 +16,7 @@ export default function ProjectPage() {
   const [loading, setLoading] = useState(false)
   const [approvals, setApprovals] = useState<any[]>([])
   const [generating, setGenerating] = useState(false)
+  const [genBusy, setGenBusy] = useState<string>("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -101,6 +102,23 @@ export default function ProjectPage() {
     loadApprovals()
   }
 
+  const runGenerate = async (kind: string, ep?: number) => {
+    setGenBusy(ep ? `${kind}:${ep}` : kind)
+    try {
+      const url = ep ? `/api/projects/${projectId}/generate/${kind}/${ep}` : `/api/projects/${projectId}/generate/${kind}`
+      const res = await fetch(url, { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(`生成失败: ${data.detail || JSON.stringify(data)}`)
+      }
+      await loadProject()
+    } catch (e: any) {
+      alert(`请求失败: ${e.message}`)
+    } finally {
+      setGenBusy("")
+    }
+  }
+
   if (!project) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -133,6 +151,7 @@ export default function ProjectPage() {
         {[
           { id: "chat", label: "AI Planning", icon: Sparkles },
           { id: "board", label: `Approval Board${pendingApprovals.length > 0 ? ` (${pendingApprovals.length})` : ""}`, icon: CheckCircle },
+          { id: "generate", label: "生成素材", icon: Image },
           { id: "editor", label: "Workflow Editor", icon: Play },
         ].map((tab) => (
           <button
@@ -176,6 +195,15 @@ export default function ProjectPage() {
             onApprove={handleApprove}
             onReject={handleReject}
             onGenerate={handlePlan}
+          />
+        )}
+        {activeTab === "generate" && (
+          <GeneratePanel
+            project={project}
+            busy={genBusy}
+            onGenerateCharacters={() => runGenerate("characters")}
+            onGenerateStoryboard={(ep) => runGenerate("storyboard", ep)}
+            onGenerateVideo={(ep) => runGenerate("video", ep)}
           />
         )}
         {activeTab === "editor" && <EditorPanel project={project} />}
@@ -337,6 +365,96 @@ function BoardPanel({ approvals, onApprove, onReject, onGenerate }: {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function GeneratePanel({ project, busy, onGenerateCharacters, onGenerateStoryboard, onGenerateVideo }: {
+  project: any
+  busy: string
+  onGenerateCharacters: () => void
+  onGenerateStoryboard: (ep: number) => void
+  onGenerateVideo: (ep: number) => void
+}) {
+  const assets = project.assets || {}
+  const characters: Record<string, string> = assets.characters || {}
+  const storyboards: Record<string, any[]> = assets.storyboard || {}
+  const videos: Record<string, string> = assets.videos || {}
+  const episodes: any[] = project.episodes || []
+
+  const btn = (disabled: boolean): React.CSSProperties => ({
+    padding: "0.5rem 1rem", background: disabled ? "#333" : "#6366f1", color: "#fff",
+    border: "none", borderRadius: 8, cursor: disabled ? "not-allowed" : "pointer", fontSize: "0.85rem",
+  })
+
+  return (
+    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <section style={{ marginBottom: "2.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem" }}>
+          <Users size={18} style={{ color: "#6366f1" }} />
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, flex: 1 }}>角色定妆照</h2>
+          <button onClick={onGenerateCharacters} disabled={!!busy} style={btn(!!busy)}>
+            {busy === "characters" ? "生成中…" : "生成全部角色图"}
+          </button>
+        </div>
+        {Object.keys(characters).length === 0 ? (
+          <p style={{ color: "#666", fontSize: "0.85rem" }}>还没有角色图。先完成剧情规划，再点击生成（ComfyUI 在线时走 AI 生成，否则生成占位图）。</p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem" }}>
+            {Object.entries(characters).map(([id, url]) => (
+              <div key={id} style={{ background: "#141414", borderRadius: 12, border: "1px solid #2a2a2a", overflow: "hidden" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt={id} style={{ width: "100%", display: "block" }} />
+                <div style={{ padding: "0.6rem", fontSize: "0.85rem", color: "#ccc" }}>{id}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "1rem" }}>
+          <Clapperboard size={18} style={{ color: "#6366f1" }} />
+          <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>分集生成</h2>
+        </div>
+        {episodes.length === 0 && <p style={{ color: "#666", fontSize: "0.85rem" }}>还没有集数，请先在 AI Planning 里生成剧情规划。</p>}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          {episodes.map((ep: any) => {
+            const n = ep.number
+            const sb = storyboards[String(n)] || []
+            const video = videos[String(n)]
+            return (
+              <div key={n} style={{ background: "#141414", borderRadius: 12, border: "1px solid #2a2a2a", padding: "1rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.75rem" }}>
+                  <span style={{ fontSize: "0.75rem", color: "#6366f1", fontWeight: 700 }}>EP{n}</span>
+                  <span style={{ fontWeight: 600, flex: 1 }}>{ep.title}</span>
+                  <button onClick={() => onGenerateStoryboard(n)} disabled={!!busy} style={btn(!!busy)}>
+                    {busy === `storyboard:${n}` ? "分镜生成中…" : "🎨 分镜图"}
+                  </button>
+                  <button onClick={() => onGenerateVideo(n)} disabled={!!busy} style={btn(!!busy)}>
+                    {busy === `video:${n}` ? "视频生成中…" : "🎬 生成视频"}
+                  </button>
+                </div>
+                {sb.length > 0 && (
+                  <div style={{ display: "flex", gap: "0.5rem", overflowX: "auto", marginBottom: video ? "0.75rem" : 0 }}>
+                    {sb.filter((s: any) => s.image).map((s: any) => (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img key={s.shot_number} src={s.image} alt={`shot${s.shot_number}`} style={{ height: 90, borderRadius: 6, border: "1px solid #2a2a2a" }} />
+                    ))}
+                  </div>
+                )}
+                {video && (
+                  <div>
+                    <Film size={14} style={{ color: "#22c55e", display: "inline", marginRight: 6, verticalAlign: "middle" }} />
+                    {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+                    <video src={video} controls style={{ width: "100%", maxWidth: 480, borderRadius: 8, marginTop: "0.5rem", display: "block" }} />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }

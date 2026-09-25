@@ -54,12 +54,32 @@ def _save_settings(data: Dict[str, Any]):
     env_path.write_text("\n".join(env_lines) + "\n", encoding="utf-8")
 
 
+@router.get("/check")
+async def check_comfyui():
+    """Probe the configured ComfyUI server and cache availability in settings."""
+    import httpx
+    settings = _load_settings()
+    url = (settings.get("comfyui_url") or "http://localhost:8188").rstrip("/")
+    available = False
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(f"{url}/system_stats")
+            available = resp.status_code == 200
+    except Exception:
+        available = False
+    if settings.get("comfyui_available") != available:
+        settings["comfyui_available"] = available
+        _save_settings(settings)
+    return {"available": available, "url": url}
+
+
 @router.get("/")
 async def get_settings():
     return _load_settings()
 
 
 @router.put("/")
+@router.post("/")
 async def update_settings(req: Dict[str, Any]):
     settings = _load_settings()
     settings.update(req)

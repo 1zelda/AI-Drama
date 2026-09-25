@@ -1,13 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ProjectStore } from '@/lib/store';
+import { NextRequest } from 'next/server';
+import { passthrough } from '@/lib/api';
 
 export async function GET() {
-  const projects = ProjectStore.list();
-  return NextResponse.json(projects);
+  return passthrough('/api/projects/');
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const project = ProjectStore.create(body.title, body.description || '');
-  return NextResponse.json(project);
+  return passthrough('/api/projects/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }

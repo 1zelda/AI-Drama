@@ -1,24 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ApprovalGate } from '@/lib/approval';
-
-const STORAGE_DIR = 'data';
+import { NextRequest } from 'next/server';
+import { passthrough } from '@/lib/api';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const gate = new ApprovalGate(id, STORAGE_DIR);
-  const url = new URL(req.url);
-  const stage = url.searchParams.get('stage');
-  if (stage) return NextResponse.json(gate.getItems(stage));
-  return NextResponse.json(gate.getItems());
+  const stage = req.nextUrl.searchParams.get('stage');
+  return passthrough(`/api/projects/${id}/approvals${stage ? `?stage=${stage}` : ''}`);
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { action, feedback, stage, itemType, itemId, title, description } = await req.json();
-  const gate = new ApprovalGate(id, STORAGE_DIR);
-  if (action === 'create') {
-    const item = gate.create(stage, itemType, itemId, title, description || '');
-    return NextResponse.json(item);
-  }
-  return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  const body = await req.json();
+  return passthrough(`/api/projects/${id}/approvals`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }

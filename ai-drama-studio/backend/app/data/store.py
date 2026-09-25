@@ -15,13 +15,18 @@ _DEFAULT_STORAGE = Path(__file__).resolve().parent.parent.parent / "data" / "pro
 
 def _parse_dt(value) -> datetime:
     if isinstance(value, datetime):
-        return value
-    if not value:
-        return datetime.now()
-    try:
-        return datetime.fromisoformat(value)
-    except (ValueError, TypeError):
-        return datetime.now()
+        dt = value
+    elif not value:
+        dt = datetime.now()
+    else:
+        try:
+            dt = datetime.fromisoformat(value)
+        except (ValueError, TypeError):
+            dt = datetime.now()
+    # normalize to naive local so sorting never mixes aware/naive datetimes
+    if dt.tzinfo is not None:
+        dt = dt.astimezone().replace(tzinfo=None)
+    return dt
 
 
 class ProjectStore:

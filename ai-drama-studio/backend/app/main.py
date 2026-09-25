@@ -32,6 +32,13 @@ app.include_router(settings_router)
 _static_dir = Path(__file__).parent.parent / 'static'
 app.mount('/static', StaticFiles(directory=str(_static_dir)), name='static')
 
+# Generated assets (character sheets, storyboard images, episode videos)
+from .services.generation import ASSETS_DIR, OUTPUT_DIR
+ASSETS_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+app.mount('/assets', StaticFiles(directory=str(ASSETS_DIR)), name='assets')
+app.mount('/output', StaticFiles(directory=str(OUTPUT_DIR)), name='output')
+
 
 @app.middleware('http')
 async def trailing_slash_middleware(request: Request, call_next):

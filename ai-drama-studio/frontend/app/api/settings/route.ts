@@ -1,12 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { loadSettings, saveSettings } from '@/lib/settings';
+import { NextRequest } from 'next/server';
+import { passthrough } from '@/lib/api';
 
 export async function GET() {
-  return NextResponse.json(loadSettings());
+  return passthrough('/api/settings/');
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  saveSettings(body);
-  return NextResponse.json({ ok: true });
+  return passthrough('/api/settings/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
