@@ -1,0 +1,31 @@
+Initialized empty Git repository in H:/9æœ?4æ—¥ç‰ˆ ç¡¬ç›˜æŒ‚æŽ‰ä¹‹åŽçš„é¡¹ç›?AIæ¼«å‰§çœŸäººå‰?.git/
+
+git : warning: in the working copy of '.gitconfig', LF will be replaced by CRLF
+ the next time Git touches it
+ËùÔÚÎ»ÖÃ ÐÐ:445 ×Ö·û: 354
++ ... t config https.proxy "http://127.0.0.1:7890"; git add -A 2>&1 | Out-S ...
++                                                   ~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (warning: in the... Git touches it 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the n
+ext time Git touches it
+warning: in the working copy of 'ARCHITECTURE.md', LF will be replaced by CRLF 
+the next time Git touches it
+warning: in the working copy of 'build_libs.py', LF will be replaced by CRLF th
+e next time Git touches it
+warning: in the working copy of 'fix_new.py', LF will be replaced by CRLF the n
+ext time Git touches it
+warning: in the working copy of 'gen.js', LF will be replaced by CRLF the next 
+time Git touches it
+warning: in the working copy of 'gen_html.js', LF will be replaced by CRLF the 
+next time Git touches it
+warning: in the working copy of 'research_report.md', LF will be replaced by CR
+LF the next time Git touches it
+warning: in the working copy of 't.py', LF will be replaced by CRLF the next ti
+me Git touches it
+warning: in the working copy of 'test_write.txt', LF will be replaced by CRLF t
+he next time Git touches it
+
+38
