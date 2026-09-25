@@ -1,0 +1,28 @@
+name: character_generator
+type: llm
+
+prompt: |
+  Based on the following story, generate character settings:
+  
+  Story synopsis: {{synopsis}}
+  Genre: {{genre}}
+  
+  Please output JSON format:
+  {
+    "characters": [
+      {
+        "name": "character_name",
+        "role": "protagonist/antagonist",
+        "age": 25,
+        "personality": "personality_description",
+        "appearance": "appearance_description",
+        "costume": "costume_style",
+        "relationships": ["relationship"]
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.5
+  max_tokens: 3000

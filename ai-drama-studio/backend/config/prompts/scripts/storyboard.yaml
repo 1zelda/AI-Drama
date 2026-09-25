@@ -1,0 +1,30 @@
+name: storyboard_generator
+type: llm
+
+prompt: |
+  Based on the following episode content, generate detailed storyboard:
+  
+  Episode: {{episode_title}}
+  Story: {{episode_summary}}
+  Characters: {{characters}}
+  Scenes: {{scenes}}
+  
+  Please output JSON format:
+  {
+    "shots": [
+      {
+        "shot_number": 1,
+        "type": "establishing/medium/close/easy",
+        "camera": "fixed/push/pll/pan/track",
+        "description": "scene_description",
+        "dialogue": "dialogue_text",
+        "duration": "5 seconds",
+        "mood": "emotion_mood"
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.5
+  max_tokens: 5000

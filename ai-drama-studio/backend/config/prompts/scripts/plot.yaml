@@ -1,0 +1,22 @@
+name: plot_planner
+type: llm
+
+prompt: |
+  you are a professional drama writer. Please generate a complete story outline based on the following title:
+  
+  title: {{title}}
+  
+  Please output JSON format:
+  {
+    \"title\": \"durmama_name\",
+    \"genre\": \"pergen_key\",
+    \"theme\": \"theme_key\",
+    \"synopsis\": \"synopsis_key\",
+    \"hooks\": [\"hook1\", \"hook2\", \"hook3\"],
+    \"ending\": \"ending_description\"
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.7
+  max_tokens: 2000

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Drama Studio</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d0d12;color:#e0e0e0;min-height:100vh}
+a{color:#6ee7b7;text-decoration:none}
+.header{background:#1a1a24;border-bottom:1px solid #2a2a3a;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.header h1{font-size:18px;color:#6ee7b7}
+.header nav a{margin-left:20px;font-size:14px;color:#888}
+.header nav a:hover{color:#6ee7b7}
+.container{max-width:1200px;margin:0 auto;padding:24px}
+.card{background:#1a1a24;border:1px solid #2a2a3a;border-radius:12px;padding:20px;margin-bottom:16px}
+.card h2{color:#6ee7b7;font-size:16px;margin-bottom:12px}
+.card h3{color:#e0e0e0;font-size:14px;margin-bottom:8px}
+.btn{background:#1e3a5f;color:#93c5fd;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;transition:all .2s}
+.btn:hover{background:#2a4a7f}
+.btn-primary{background:#6ee7b7;color:#0d0d12;font-weight:600}
+.btn-primary:hover{background:#3dd9a3}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-sm{padding:4px 10px;font-size:12px}
+input,textarea,select{background:#0d0d12;border:1px solid #2a2a3a;color:#e0e0e0;padding:8px 12px;border-radius:6px;font-size:13px;width:100%;outline:none}
+input:focus,textarea:focus,select:focus{border-color:#6ee7b7}
+label{display:block;font-size:12px;color:#888;margin-bottom:4px;margin-top:12px}
+label:first-child{margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.chat-msg{padding:10px 14px;border-radius:10px;margin-bottom:8px;max-width:85%;line-height:1.6;font-size:14px;white-space:pre-wrap}
+.chat-msg.user{background:#1e3a5f;color:#93c5fd;margin-left:auto}
+.chat-msg.assistant{background:#1a1a24;border:1px solid #2a2a3a}
+.chat-msg.system{background:#2a2a1a;border:1px solid #3a3a2a;color:#fcd34d}
+.shot-card{background:#1a1a24;border-left:3px solid #6ee7b7;border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:8px}
+.shot-card h5{color:#6ee7b7;font-size:13px;margin-bottom:4px}
+.shot-card p{font-size:12px;color:#aaa;line-height:1.5}
+.toast{position:fixed;top:20px;right:20px;background:#1e2a24;border:1px solid #22c55e;color:#6ee7b7;padding:10px 18px;border-radius:8px;z-index:200;font-size:13px;animation:fadeIn .3s}
+.toast.err{background:#2a1a1a;border-color:#ef4444;color:#fca5a5}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.h{display:none}
+.project-card{background:#1a1a24;border:1px solid #2a2a3a;border-radius:10px;padding:16px;cursor:pointer;transition:all .2s}
+.project-card:hover{border-color:#6ee7b7;transform:translateY(-2px)}
+.project-card h3{color:#e0e0e0;margin-bottom:4px}
+.project-card p{color:#888;font-size:12px}
+.project-card .meta{color:#6ee7b7;font-size:11px;margin-top:8px}
+.tag{display:inline-block;background:#1e3a5f;color:#93c5fd;padding:2px 8px;border-radius:4px;font-size:11px;margin-right:4px}
+.loading{text-align:center;padding:40px;color:#555}
+.loading-spinner{width:30px;height:30px;border:3px solid #2a2a3a;border-top-color:#6ee7b7;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid #2a2a3a;padding-bottom:0}
+.tab{padding:8px 16px;cursor:pointer;font-size:13px;color:#888;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.active{color:#6ee7b7;border-bottom-color:#6ee7b7}
+.tab:hover{color:#e0e0e0}
+.form-group{margin-bottom:16px}
+.form-group label{margin-bottom:6px}
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-content{background:#1a1a24;border:1px solid #2a2a3a;border-radius:12px;padding:24px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto}
+.video-result{margin-top:16px;padding:16px;background:#0d0d12;border-radius:8px;border:1px solid #2a2a3a}
+.video-result video{max-width:100%;border-radius:8px}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.status-dot.ok{background:#22c55e}
+.status-dot.err{background:#ef4444}
+.status-dot.warn{background:#f59e0b}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>AI Drama Studio</h1>
+<nav>
+<a href="#" onclick="showPage('projects')">项目</a>
+<a href="#" onclick="showPage('settings')">设置</a>
+</nav>
+</div>
+
+<div id="page-projects" class="container">
+<h2 style="margin-bottom:16px;color:#6ee7b7">我的项目</h2>
+<div id="project-list" class="grid"></div>
+<button class="btn btn-primary" onclick="showPage('new')" style="margin-top:16px">+ 新建项目</button>
+</div>
+
+<div id="page-new" class="container h">
+<div class="card">
+<h2>新建项目</h2>
+<div class="form-group">
+<label>剧名 *</label>
+<input id="new-title" placeholder="输入剧名，如：霓虹迷踪">
+</div>
+<div class="form-group">
+<label>剧情简介</label>
+<textarea id="new-desc" rows="4" placeholder="简要描述剧情，如：近未来赛博都市中，黑客少女发现记忆被篡改..."></textarea>
+</div>
+<button class="btn btn-primary" onclick="createProject()">创建</button>
+<button class="btn" onclick="showPage('projects')" style="margin-left:8px">取消</button>
+</div>
+</div>
+
+<div id="page-project" class="container h">
+<div class="tabs">
+<div class="tab active" onclick="showTab('plan')">剧情规划</div>
+<div class="tab" onclick="showTab('chat')">AI 讨论</div>
+<div class="tab" onclick="showTab('chars')">人物</div>
+<div class="tab" onclick="showTab('eps')">分集</div>
+<div class="tab" onclick="showTab('video')">视频生成</div>
+</div>
+<div id="tab-plan" class="tc"></div>
+<div id="tab-chat" class="tc h"></div>
+<div id="tab-chars" class="tc h"></div>
+<div id="tab-eps" class="tc h"></div>
+<div id="tab-video" class="tc h"></div>
+</div>
+
+<div id="page-settings" class="container h">
+<div class="card">
+<h2>LLM 配置</h2>
+<div class="grid">
+<div class="form-group">
+<label>API 密钥</label>
+<input id="set-api-key" type="password">
+</div>
+<div class="form-group">
+<label>Base URL</label>
+<input id="set-base-url">
+</div>
+</div>
+<div class="grid">
+<div class="form-group">
+<label>模型</label>
+<select id="set-model">
+<option value="deepseek-chat">deepseek-chat</option>
+<option value="deepseek-reasoner">deepseek-reasoner</option>
+<option value="gpt-4o">gpt-4o</option>
+<option value="gpt-4o-mini">gpt-4o-mini</option>
+</select>
+</div>
+<div class="form-group">
+<label>提供商</label>
+<select id="set-provider" onchange="onProviderChange()">
+<option value="deepseek">DeepSeek</option>
+<option value="openai">OpenAI</option>
+<option value="agnes">Agnes</option>
+</select>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>Agnes 视频配置</h2>
+<div class="grid">
+<div class="form-group">
+<label>API 密钥</label>
+<input id="set-agnes-key" type="password">
+</div>
+<div class="form-group">
+<label>代理地址</label>
+<input id="set-agnes-proxy">
+</div>
+</div>
+<div class="grid">
+<div class="form-group">
+<label>视频模型</label>
+<select id="set-agnes-model">
+<option value="agnes-video-2.5-flash">agnes-video-2.5-flash</option>
+<option value="agnes-video-2.5">agnes-video-2.5</option>
+<option value="agnes-video-v2.0">agnes-video-v2.0</option>
+</select>
+</div>
+<div class="form-group">
+<label>生成模式</label>
+<input id="set-agnes-mode" placeholder="T2V (文生视频) 或 I2V (图生视频)">
+</div>
+</div>
+</div>
+
+<div class="card">
+<h2>ComfyUI 配置</h2>
+<div class="form-group">
+<label>服务器地址</label>
+<input id="set-comfyui-url" placeholder="http://localhost:8188">
+</div>
+</div>
+
+<button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+<button class="btn" onclick="loadSettings()" style="margin-left:8px">重新加载</button>
+</div>
+
+<div id="toast" class="h"></div>
+
+<script>
+const API = '/api';
+let currentProjectId = null;
+let settings = {};
+
+// Navigation
+function showPage(page) {
+  ['projects','new','project','settings'].forEach(p => {
+    document.getElementById('page-'+p).classList.toggle('h', p!==page);
+  });
+  if(page==='projects') loadProjects();
+  if(page==='settings') loadSettings();
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active', ['plan','chat','chars','eps','video'][i]===tab);
+  });
+  ['plan','chat','chars','eps','video'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('h', t!==tab);
+  });
+  if(tab==='plan') loadPlan();
+  if(tab==='chat') initChat();
+  if(tab==='chars') loadChars();
+  if(tab==='eps') loadEpisodes();
+  if(tab==='video') initVideo();
+}
+
+function toast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (err?' err':'');
+  setTimeout(()=>t.className='h', 3000);
+}
+
+// Projects
+async function loadProjects() {
+  const list = document.getElementById('project-list');
+  list.innerHTML = '<div class="loading"><div class="loading-spinner"></div>加载中...</div>';
+  try {
+    const r = await fetch(API+'/projects/');
+    const projects = await r.json();
+    if(!projects.length) { list.innerHTML='<div class="es"><h3>还没有项目</h3><p>创建你的第一个AI短剧项目</p></div>'; return; }
+    list.innerHTML = projects.map(p=>`
+      <div class="project-card" onclick="openProject('${p.id}')">
+        <h3>${esc(p.title)}</h3>
+        <p>${esc(p.description||'无简介')}</p>
+        <div class="meta">
+          <span class="tag">${p.status}</span>
+          ${p.plan&&p.plan.total_episodes?`<span class="tag">${p.plan.total_episodes}集</span>`:''}
+          ${p.characters&&p.characters.length?`<span class="tag">${p.characters.length}人物</span>`:''}
+        </div>
+      </div>`).join('');
+  } catch(e) { toast('加载失败: '+e.message, true); list.innerHTML=''; }
+}
+
+function esc(s) { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+async function createProject() {
+  const title = document.getElementById('new-title').value.trim();
+  const desc = document.getElementById('new-desc').value.trim();
+  if(!title) { toast('请输入剧名', true); return; }
+  try {
+    const r = await fetch(API+'/projects/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title,description:desc})});
+    const p = await r.json();
+    openProject(p.id);
+  } catch(e) { toast('创建失败: '+e.message, true); }
+}
+
+async function openProject(id) {
+  currentProjectId = id;
+  showPage('project');
+  loadPlan();
+}
+
+// Plan
+async function loadPlan() {
+  const el = document.getElementById('tab-plan');
+  if(!currentProjectId) return;
+  el.innerHTML = '<div class="loading"><div class="loading-spinner"></div>加载中...</div>';
+  try {
+    const r = await fetch(API+'/projects/'+currentProjectId);
+    const p = await r.json();
+    if(!p.plan||!Object.keys(p.plan).length) {
+      el.innerHTML = `<div class="card"><h2>${esc(p.title)}</h2>
+        <p style="color:#888;margin-bottom:12px">${esc(p.description||'')}</p>
+        <button class="btn btn-primary" onclick="generatePlan()">AI 生成剧情规划</button></div>`;
+      return;
+    }
+    const pl = p.plan;
+    el.innerHTML = `<div class="card"><h2>${esc(p.title)}</h2>
+      <p style="color:#aaa;margin-bottom:8px">${esc(pl.synopsis||'')}</p>
+      <div style="margin-bottom:8px">
+        <span class="tag">${esc(pl.genre||'')}</span>
+        <span class="tag">${esc(pl.tone||'')}</span>
+        <span class="tag">${pl.total_episodes||0}集</span>
+        <span class="tag">${pl.episode_duration_seconds||60}s/集</span>
+      </div>
+      <button class="btn" onclick="generatePlan()">重新生成</button>
+    </div>
+    <div class="card"><h2>人物 (${(pl.characters||[]).length})</h2>
+      ${(pl.characters||[]).map(c=>`<div class="shot-card"><h5>${esc(c.name)} - ${esc(c.role)}</h5>
+        <p>${esc(c.appearance||'')}</p>
+        <p style="font-size:11px;color:#666;margin-top:4px">年龄:${c.age} | ${esc(c.personality||'')}</p>
+      </div>`).join('')}
+    </div>
+    <div class="card"><h2>分集大纲 (${(pl.episodes||[]).length})</h2>
+      ${(pl.episodes||[]).map(e=>`<div class="shot-card"><h5>第${e.number}集: ${esc(e.title)}</h5>
+        <p>${esc(e.summary||'')}</p>
+        ${e.key_scenes?`<p style="font-size:11px;color:#666;margin-top:4px">关键场景: ${e.key_scenes.map(s=>esc(s)).join('；')}</p>`:''}
+      </div>`).join('')}
+    </div>`;
+  } catch(e) { el.innerHTML='<p class="err">加载失败</p>'; }
+}
+
+async function generatePlan() {
+  const el = document.getElementById('tab-plan');
+  el.innerHTML = '<div class="loading"><div class="loading-spinner"></div>AI 正在生成剧情规划...</div>';
+  try {
+    const r = await fetch(API+'/projects/'+currentProjectId+'/plan',{method:'POST'});
+    if(!r.ok) throw new Error(await r.text());
+    loadPlan();
+    toast('剧情规划生成完成!');
+  } catch(e) { toast('生成失败: '+e.message, true); loadPlan(); }
+}
+
+// Chat
+let chatHistory = [];
+function initChat() {
+  const el = document.getElementById('tab-chat');
+  if(!el.dataset.inited) {
+    el.dataset.inited = '1';
+    el.innerHTML = `<div id="chat-messages" style="max-height:400px;overflow-y:auto;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px">
+        <input id="chat-input" placeholder="与AI导演讨论剧情细节..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn btn-primary" onclick="sendChat()">发送</button>
+      </div>`;
+  }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if(!msg||!currentProjectId) return;
+  input.value = '';
+  chatHistory.push({role:'user',content:msg});
+  renderChat();
+  const el = document.getElementById('chat-messages');
+  el.innerHTML += '<div class="chat-msg system"><div class="loading-spinner" style="width:16px;height:16px;border-width:2px"></div></div>';
+  el.scrollTop = el.scrollHeight;
+  try {
+    const r = await fetch(API+'/projects/'+currentProjectId+'/chat',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:msg})
+    });
+    const data = await r.json();
+    chatHistory.push({role:'assistant',content:data.reply});
+    el.innerHTML = el.innerHTML.replace(/<div class="chat-msg system".*?<\/div>/,'');
+    renderChat();
+    if(data.suggestions&&data.suggestions.length) {
+      el.innerHTML += `<div class="chat-msg system">💡 建议: ${data.suggestions.map(s=>`<br>• ${esc(s)}`).join('')}</div>`;
+      el.scrollTop = el.scrollHeight;
+    }
+  } catch(e) {
+    el.innerHTML = el.innerHTML.replace(/<div class="chat-msg system".*?<\/div>/,'');
+    renderChat();
+    toast('发送失败: '+e.message, true);
+  }
+}
+
+function renderChat() {
+  const el = document.getElementById('chat-messages');
+  if(!el) return;
+  el.innerHTML = chatHistory.map(m=>`<div class="chat-msg ${m.role}">${esc(m.content)}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+// Characters
+async function loadChars() {
+  const el = document.getElementById('tab-chars');
+  if(!currentProjectId) return;
+  try {
+    const r = await fetch(API+'/projects/'+currentProjectId+'/characters');
+    const chars = await r.json();
+    el.innerHTML = `<div class="card"><h2>人物列表</h2>
+      ${chars.map(c=>`<div class="shot-card"><h5>${esc(c.name)} - ${esc(c.role)}</h5>
+        <p>${esc(c.description||c.appearance||'')}</p>
+        <p style="font-size:11px;color:#666">造型: ${esc(c.costume||'')}</p>
+      </div>`).join('')}
+      <button class="btn" onclick="addChar()" style="margin-top:12px">+ 添加人物</button>
+    </div>`;
+  } catch(e) { el.innerHTML='<p class="err">加载失败</p>'; }
+}
+
+function addChar() {
+  const name = prompt('人物名字:');
+  if(!name) return;
+  const role = prompt('角色 (protagonist/antagonist/supporting):','supporting');
+  const desc = prompt('人物描述:','');
+  const appearance = prompt('外貌特征:','');
+  const costume = prompt('服装风格:','');
+  if(!currentProjectId) return;
+  fetch(API+'/projects/'+currentProjectId+'/characters',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name,role:role||'supporting',description:desc,appearance,costume})
+  }).then(r=>r.json()).then(()=>{ loadChars(); toast('人物已添加'); });
+}
+
+// Episodes
+async function loadEpisodes() {
+  const el = document.getElementById('tab-eps');
+  if(!currentProjectId) return;
+  try {
+    const r = await fetch(API+'/projects/'+currentProjectId);
+    const p = await r.json();
+    const episodes = p.plan?.episodes||[];
+    el.innerHTML = `<div class="card"><h2>分集详情</h2>
+      ${episodes.map(e=>`<div class="shot-card"><h5>第${e.number}集: ${esc(e.title)}</h5>
+        <p>${esc(e.summary||'')}</p>
+        ${e.key_scenes?`<p style="font-size:11px;color:#666;margin-top:4px">关键场景:</p>
+        ${e.key_scenes.map(s=>`<div style="padding:4px 0;font-size:12px;color:#aaa">• ${esc(s)}</div>`).join('')}`:''}
+      </div>`).join('')||'<p style="color:#555">暂无分集，请先AI生成剧情规划</p>'}
+    </div>`;
+  } catch(e) { el.innerHTML='<p class="err">加载失败</p>'; }
+}
+
+// Video Generation
+async function initVideo() {
+  const el = document.getElementById('tab-video');
+  if(el.dataset.inited) return;
+  el.dataset.inited = '1';
+  el.innerHTML = `<div class="card">
+    <h2>Agnes 视频生成</h2>
+    <div class="form-group"><label>提示词</label>
+      <textarea id="vid-prompt" rows="3" placeholder="描述要生成的视频内容..."></textarea>
+    </div>
+    <div class="grid">
+      <div class="form-group"><label>模型</label>
+        <select id="vid-model">
+          <option value="agnes-video-2.5-flash">agnes-video-2.5-flash</option>
+          <option value="agnes-video-2.5">agnes-video-2.5</option>
+          <option value="agnes-video-v2.0">agnes-video-v2.0</option>
+        </select>
+      </div>
+      <div class="form-group"><label>时长(秒)</label>
+        <input id="vid-duration" type="number" value="5" min="1" max="30">
+      </div>
+    </div>
+    <div class="grid">
+      <div class="form-group"><label>分辨率</label>
+        <select id="vid-resolution">
+          <option value="720p">720p</option>
+          <option value="1080p">1080p</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Seed (可选)</label>
+        <input id="vid-seed" type="number" placeholder="随机">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="generateVideo()">生成视频</button>
+    <div id="vid-result"></div>
+  </div>
+  <div class="card">
+    <h2>生成历史</h2>
+    <div id="vid-history"></div>
+  </div>`;
+  loadVidHistory();
+}
+
+async function generateVideo() {
+  const prompt = document.getElementById('vid-prompt').value.trim();
+  if(!prompt) { toast('请输入提示词', true); return; }
+  const btn = event.target;
+  btn.disabled = true; btn.textContent = '生成中...';
+  const result = document.getElementById('vid-result');
+  result.innerHTML = '<div class="loading"><div class="loading-spinner"></div>正在生成视频，请稍候...</div>';
+  try {
+    const body = {
+      prompt,
+      model: document.getElementById('vid-model').value,
+      duration: parseInt(document.getElementById('vid-duration').value)||5,
+      resolution: document.getElementById('vid-resolution').value,
+    };
+    const seed = document.getElementById('vid-seed').value;
+    if(seed) body.seed = parseInt(seed);
+    const r = await fetch(API+'/agnes/video/generate',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+    });
+    const data = await r.json();
+    if(data.error) throw new Error(data.error);
+    if(data.video_url) {
+      result.innerHTML = `<div class="video-result">
+        <p style="color:#6ee7b7;margin-bottom:8px">✅ 视频生成完成!</p>
+        <video controls src="${esc(data.video_url)}"></video>
+        <p style="font-size:11px;color:#666;margin-top:8px">状态: ${esc(data.status)} | 任务ID: ${esc(data.task_id||'直接返回')}</p>
+      </div>`;
+      addToHistory(data);
+      toast('视频生成成功!');
+    } else {
+      result.innerHTML = `<div class="video-result"><p style="color:#f59e0b">⏳ 生成任务已提交，任务ID: ${esc(data.task_id||'unknown')}</p>
+        <p style="font-size:12px;color:#888">请稍后刷新查看结果</p></div>`;
+    }
+  } catch(e) {
+    result.innerHTML = `<div class="video-result"><p style="color:#ef4444">❌ 生成失败: ${esc(e.message)}</p></div>`;
+    toast('生成失败', true);
+  } finally { btn.disabled=false; btn.textContent='生成视频'; }
+}
+
+function addToHistory(data) {
+  const hist = JSON.parse(localStorage.getItem('vid_history')||'[]');
+  hist.unshift({...data, time:new Date().toISOString()});
+  if(hist.length>20) hist.pop();
+  localStorage.setItem('vid_history',JSON.stringify(hist));
+  loadVidHistory();
+}
+
+function loadVidHistory() {
+  const hist = JSON.parse(localStorage.getItem('vid_history')||'[]');
+  const el = document.getElementById('vid-history');
+  if(!el) return;
+  if(!hist.length) { el.innerHTML='<p style="color:#555">暂无生成记录</p>'; return; }
+  el.innerHTML = hist.map(h=>`<div class="shot-card"><h5>${h.status==='completed'?'✅':'⏳'} ${esc(h.prompt?.substring(0,50))}...</h5>
+    <p style="font-size:11px;color:#666">${new Date(h.time).toLocaleString()}</p>
+    ${h.video_url?`<a href="${esc(h.video_url)}" target="_blank" class="btn btn-sm">查看视频</a>`:''}
+  </div>`).join('');
+}
+
+// Settings
+async function loadSettings() {
+  try {
+    const r = await fetch(API+'/settings/');
+    settings = await r.json();
+    document.getElementById('set-api-key').value = settings.api_key||'';
+    document.getElementById('set-base-url').value = settings.base_url||'https://api.deepseek.com/v1';
+    document.getElementById('set-model').value = settings.model||'deepseek-chat';
+    document.getElementById('set-provider').value = settings.llm_provider||'deepseek';
+    document.getElementById('set-agnes-key').value = settings.agnes_api_key||'';
+    document.getElementById('set-agnes-proxy').value = settings.agnes_proxy_url||'http://127.0.0.1:57324';
+    document.getElementById('set-agnes-model').value = settings.agnes_video_model||'agnes-video-2.5-flash';
+    document.getElementById('set-agnes-mode').value = settings.agnes_video_mode||'T2V';
+    document.getElementById('set-comfyui-url').value = settings.comfyui_url||'http://localhost:8188';
+  } catch(e) { toast('加载设置失败', true); }
+}
+
+async function saveSettings() {
+  const data = {
+    llm_provider: document.getElementById('set-provider').value,
+    api_key: document.getElementById('set-api-key').value,
+    base_url: document.getElementById('set-base-url').value,
+    model: document.getElementById('set-model').value,
+    agnes_api_key: document.getElementById('set-agnes-key').value,
+    agnes_proxy_url: document.getElementById('set-agnes-proxy').value,
+    agnes_video_model: document.getElementById('set-agnes-model').value,
+    agnes_video_mode: document.getElementById('set-agnes-mode').value,
+    comfyui_url: document.getElementById('set-comfyui-url').value,
+  };
+  try {
+    const r = await fetch(API+'/settings/',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    if(!r.ok) throw new Error(await r.text());
+    toast('设置已保存!');
+  } catch(e) { toast('保存失败: '+e.message, true); }
+}
+
+function onProviderChange() {
+  const provider = document.getElementById('set-provider').value;
+  const urls = {deepseek:'https://api.deepseek.com/v1', openai:'https://api.openai.com/v1', agnes:'http://127.0.0.1:57324/v1'};
+  const models = {deepseek:['deepseek-chat','deepseek-reasoner'], openai:['gpt-4o','gpt-4o-mini','gpt-4o-mini'], agnes:['gpt-4o']};
+  document.getElementById('set-base-url').value = urls[provider]||'';
+  const sel = document.getElementById('set-model');
+  sel.innerHTML = (models[provider]||['deepseek-chat']).map(m=>`<option value="${m}">${m}</option>`).join('');
+}
+
+// Init
+showPage('projects');
+</script>
+</body>
+</html>
+

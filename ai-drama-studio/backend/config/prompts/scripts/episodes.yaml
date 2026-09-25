@@ -1,0 +1,29 @@
+name: episode_planner
+type: llm
+
+prompt: |
+  Based on the following story and characters, design the episode structure:
+  
+  Title: {{title}}
+  Symopsis: {{symopsis}}
+  Characters: {{characters}}
+  
+  Please output JSON format:
+  {
+   "total_episodes": 10,
+   "episode_duration": "1-2 minutes",
+   "episodes": [
+      {
+        "number": 1,
+        "title": "episode_1",
+        "summary": "summary_description",
+        "hooks": ["hook_1", "hook_2"],
+        "key_scenes": ["scene_1", "scene_2"]
+      }
+    ]
+  }
+
+config:
+  model: deepseek-chat
+  temperature: 0.6
+  max_tokens: 4000

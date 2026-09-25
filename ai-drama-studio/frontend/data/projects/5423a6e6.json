@@ -1,0 +1,19 @@
+{
+  "id": "5423a6e6",
+  "title": "Verbose Test",
+  "description": "Test",
+  "plan": {},
+  "characters": [
+    {
+      "name": "主角A",
+      "role": "protagonist",
+      "appearance": "长发黑眸，穿着现代服装"
+    }
+  ],
+  "episodes": [],
+  "storyboard": [],
+  "assets": {},
+  "created_at": "2026-08-27T16:26:04.268768",
+  "updated_at": "2026-08-27T11:17:45.190Z",
+  "status": "planning"
+}

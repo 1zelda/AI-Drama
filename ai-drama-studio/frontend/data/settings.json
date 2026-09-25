@@ -1,0 +1,16 @@
+{
+  "agnes_video_mode": "T2V",
+  "veo_api_key": "",
+  "agnes_api_key": "sk-O3SeV8WTQ9NP6DrO0JcAXMirPrvYaI9nbzOelbqGRAe4QdrQ",
+  "api_key": "sk-dd2452a96e6348f7abd0bab94aab3646",
+  "agnes_video_model": "agnes-video-2.5-flash",
+  "llm_provider": "deepseek",
+  "comfyui_available": false,
+  "kling_api_url": "https://api.klingai.com/v1",
+  "agnes_proxy_url": "http://127.0.0.1:57324",
+  "model": "deepseek-chat",
+  "base_url": "https://api.deepseek.com/v1",
+  "seedance_api_key": "",
+  "kling_api_key": "",
+  "comfyui_url": "http://localhost:8188"
+}

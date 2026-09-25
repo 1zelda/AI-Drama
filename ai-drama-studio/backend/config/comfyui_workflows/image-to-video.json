@@ -1,0 +1,139 @@
+{
+  "name": "image-to-video",
+  "description": "Generate video from reference image using Wan 2.2",
+  "type": "video",
+  "output_node": "111",
+  "nodes": {
+    "84": {
+      "class_type": "CLIPLoader",
+      "inputs": {
+        "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        "type": "wan",
+        "device": "default"
+      }
+    },
+    "89": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "clip": [
+          "84",
+          0
+        ],
+        "text": "oversaturated, overexposed, static, blurry, subtitles, low quality"
+      }
+    },
+    "90": {
+      "class_type": "VAELoader",
+      "inputs": {
+        "vae_name": "wan_2.1_vae.safetensors"
+      }
+    },
+    "93": {
+      "class_type": "CLIPTextEncode",
+      "inputs": {
+        "clip": [
+          "84",
+          0
+        ],
+        "text": "{{positive_prompt}}"
+      }
+    },
+    "95": {
+      "class_type": "UNETLoader",
+      "inputs": {
+        "unet_name": "wan2.2_i2v_high_noise_14B_fp8_scaled.safetensors",
+        "weight_dtype": "default"
+      }
+    },
+    "96": {
+      "class_type": "UNETLoader",
+      "inputs": {
+        "unet_name": "wan2.2_i2v_low_noise_14B_fp8_scaled.safetensors",
+        "weight_dtype": "default"
+      }
+    },
+    "97": {
+      "class_type": "LoadImage",
+      "inputs": {
+        "image": "{{reference_image}}"
+      }
+    },
+    "98": {
+      "class_type": "VAEEncode",
+      "inputs": {
+        "pixels": [
+          "97",
+          0
+        ],
+        "vae": [
+          "90",
+          0
+        ]
+      }
+    },
+    "100": {
+      "class_type": "FluxNoise",
+      "inputs": {
+        "seed": "{{seed}}",
+        "width": 832,
+        "height": 480
+      }
+    },
+    "105": {
+      "class_type": "KSamplerSelect",
+      "inputs": {
+        "sampler_name": "euler_ancestral"
+      }
+    },
+    "107": {
+      "class_type": "SamplerCustomAdvanced",
+      "inputs": {
+        "noise": [
+          "100",
+          0
+        ],
+        "positive": [
+          "93",
+          0
+        ],
+        "negative": [
+          "89",
+          0
+        ],
+        "sampler": [
+          "105",
+          0
+        ],
+        "latent_image": [
+          "98",
+          0
+        ]
+      }
+    },
+    "108": {
+      "class_type": "VAEDecode",
+      "inputs": {
+        "samples": [
+          "107",
+          0
+        ],
+        "vae": [
+          "90",
+          0
+        ]
+      }
+    },
+    "111": {
+      "class_type": "VHS_VideoCombine",
+      "inputs": {
+        "images": [
+          "108",
+          0
+        ],
+        "format": "video/h264-mp4",
+        "fps": 16,
+        "filename_prefix": "drama_video"
+      }
+    }
+  }
+}

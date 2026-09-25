@@ -1,0 +1,75 @@
+{
+  "name": "standard-drama",
+  "description": "标准短剧生成工作流",
+  "version": "1.0.0",
+  "nodes": {
+    "script_planner": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "scripts/plot.yaml",
+      "output": "script"
+    },
+    "character_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "scripts/characters.yaml",
+      "depends_on": [
+        "script_planner"
+      ],
+      "output": "characters"
+    },
+    "episode_planner": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "scripts/episodes.yaml",
+      "depends_on": [
+        "character_generator"
+      ],
+      "output": "episodes"
+    },
+    "storyboard_generator": {
+      "type": "llm",
+      "provider": "deepseek",
+      "model": "deepseek-chat",
+      "prompt_template": "scripts/storyboard.yaml",
+      "depends_on": [
+        "episode_planner"
+      ],
+      "output": "storyboard"
+    },
+    "image_gen": {
+      "type": "image",
+      "provider": "kling",
+      "model": "kling-v1",
+      "depends_on": [
+        "storyboard_generator"
+      ],
+      "batch_size": 10,
+      "output": "reference_images"
+    },
+    "video_gen": {
+      "type": "video",
+      "provider": "seedance",
+      "model": "seedance-2.0",
+      "depends_on": [
+        "image_gen"
+      ],
+      "output": "videos"
+    },
+    "video_stitch": {
+      "type": "ffmpeg",
+      "depends_on": [
+        "video_gen"
+      ],
+      "output": "final_video"
+    }
+  },
+  "execution": {
+    "parallel": true,
+    "retry": 3,
+    "timeout": 300
+  }
+}
