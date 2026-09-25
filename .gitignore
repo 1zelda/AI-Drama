@@ -1,5 +1,6 @@
 # 临时/诊断文件
 _diag_git.txt
+_*.txt
 *.log
 
 # 系统垃圾文件
