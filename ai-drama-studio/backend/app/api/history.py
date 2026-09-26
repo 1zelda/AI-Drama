@@ -156,9 +156,27 @@ async def record_run(run_id: str, workflow: str, result: Dict[str, Any],
     return item
 
 
+def _relocate(it: Dict[str, Any]) -> bool:
+    """项目整体搬家后 video_path 会失效；用相对 URL 把文件重新锚定回本地 output。"""
+    changed = False
+    for path_key, url_key in (("video_path", "video_url"), ("poster_path", "poster_url")):
+        p = it.get(path_key)
+        if not p or Path(p).exists():
+            continue
+        url = it.get(url_key)
+        if url and url.startswith("/media/output/"):
+            cand = OUTPUT_DIR / url[len("/media/output/"):]
+            if cand.exists():
+                it[path_key] = str(cand.resolve())
+                changed = True
+    return changed
+
+
 @router.get("/")
 async def list_history(limit: int = Query(100, ge=1, le=500)):
     items = _load()
+    if sum(_relocate(it) for it in items):
+        _save(items)
     items.sort(key=lambda x: x.get("created_at", 0), reverse=True)
     # 文件可能已被外部删除，返回时标注出来，页面上给个提示而不是展示坏图
     for it in items:

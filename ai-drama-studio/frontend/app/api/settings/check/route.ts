@@ -1,15 +1,12 @@
-import { NextResponse } from 'next/server';
-import { loadSettings, saveSettings } from '@/lib/settings';
+import { forward } from "@/lib/backend";
 
+/**
+ * 「测试连接」查 ComfyUI 是否在线。
+ * 唯一数据源是后端：读它的 system/health 里的 comfyui 探测结果，避免前端再存一份设置。
+ */
 export async function GET() {
-  const s = loadSettings();
-  try {
-    const res = await fetch(s.comfyui_url.replace(/\/$/, '') + '/system_stats', { signal: AbortSignal.timeout(5000) });
-    const available = res.ok;
-    saveSettings({ ...s, comfyui_available: available });
-    return NextResponse.json({ available, url: s.comfyui_url });
-  } catch {
-    saveSettings({ ...s, comfyui_available: false });
-    return NextResponse.json({ available: false, url: s.comfyui_url });
-  }
+  const res = await forward("/api/system/health");
+  const data: any = await res.json().catch(() => ({}));
+  const comfy = data?.checks?.comfyui || {};
+  return Response.json({ available: !!comfy.ok, url: comfy.url || "" });
 }

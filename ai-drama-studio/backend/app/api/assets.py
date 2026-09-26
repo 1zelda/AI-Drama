@@ -44,6 +44,65 @@ def _asset_url(asset_id: str, filename: str) -> str:
     return f"/media/assets/{asset_id}_{filename}"
 
 
+def _fix_entry(a: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """自愈历史/换机条目：文件按文件名重新锚定回本目录，补齐缺失字段；文件真丢了返回 None。"""
+    p = Path(a.get("path") or "")
+    if not p.exists():
+        fid = a.get("id") or ""
+        cands = [ASSET_DIR / p.name]
+        if fid and p.name:
+            cands.append(ASSET_DIR / f"{fid}_{p.name}")
+        p = next((c for c in cands if c.exists()), None)
+        if p is None:
+            return None
+    a["path"] = str(p)
+    fid = a.get("id") or ""
+    if not a.get("filename"):
+        a["filename"] = p.name[len(fid) + 1:] if fid and p.name.startswith(fid + "_") else p.name
+    ext = p.suffix.lower()
+    a.setdefault("kind", "image" if ext in IMAGE_EXTS else "video" if ext in VIDEO_EXTS else "other")
+    a.setdefault("url", _asset_url(fid, a["filename"]))
+    a.setdefault("tags", [])
+    a.setdefault("note", "")
+    a.setdefault("size", p.stat().st_size)
+    a.setdefault("created_at", p.stat().st_mtime)
+    return a
+
+
+def _load_repaired() -> Dict[str, Dict[str, Any]]:
+    """读索引并自愈：丢文件的条目剔除、缺字段的补齐、把目录里没登记的散文件补录进来。"""
+    index = _load_index()
+    changed = False
+    fixed: Dict[str, Dict[str, Any]] = {}
+    for aid, a in index.items():
+        f = _fix_entry({**a, "id": aid})
+        if f:
+            if f != a:
+                changed = True
+            fixed[aid] = f
+        else:
+            changed = True
+    known = {Path(a["path"]).name for a in fixed.values()}
+    if ASSET_DIR.exists():
+        for f in sorted(ASSET_DIR.iterdir()):
+            if not f.is_file() or f.name == "index.json" or f.name in known:
+                continue
+            aid, _, rest = f.name.partition("_")
+            if not rest or len(aid) != 10:
+                continue
+            ext = f.suffix.lower()
+            fixed[aid] = {
+                "id": aid, "filename": rest,
+                "kind": "image" if ext in IMAGE_EXTS else "video" if ext in VIDEO_EXTS else "other",
+                "path": str(f), "url": _asset_url(aid, rest), "tags": [], "note": "",
+                "size": f.stat().st_size, "created_at": f.stat().st_mtime,
+            }
+            changed = True
+    if changed:
+        _save_index(fixed)
+    return fixed
+
+
 @router.post("/upload")
 async def upload_asset(
     file: UploadFile = File(...),
@@ -83,7 +142,7 @@ async def upload_asset(
 
 @router.get("/")
 async def list_assets(kind: Optional[str] = None, tag: Optional[str] = None):
-    index = _load_index()
+    index = _load_repaired()
     items = list(index.values())
     if kind:
         items = [a for a in items if a["kind"] == kind]
@@ -95,7 +154,7 @@ async def list_assets(kind: Optional[str] = None, tag: Optional[str] = None):
 
 @router.get("/{asset_id}")
 async def get_asset(asset_id: str):
-    asset = _load_index().get(asset_id)
+    asset = _load_repaired().get(asset_id)
     if not asset:
         raise HTTPException(404, f"资产不存在：{asset_id}")
     return asset
@@ -103,7 +162,7 @@ async def get_asset(asset_id: str):
 
 @router.get("/{asset_id}/file")
 async def asset_file(asset_id: str):
-    asset = _load_index().get(asset_id)
+    asset = _load_repaired().get(asset_id)
     if not asset or not Path(asset["path"]).exists():
         raise HTTPException(404, f"资产不存在或文件丢失：{asset_id}")
     return FileResponse(asset["path"])

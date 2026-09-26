@@ -396,7 +396,7 @@ export default function SettingsPage() {
           style={{width:"100%",padding:"1rem",background:saving?"#333":saved?"#22c55e":"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",border:"none",borderRadius:10,fontSize:"1.1rem",fontWeight:600,cursor:saving?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"0.5rem"}}>
           {saving?<><Loader2 size={18} style={{animation:"spin 1s linear infinite"}}/>Saving...</>:saved?<><CheckCircle size={18}/>Saved!</>:<><Save size={18}/>Save Settings</>}
         </button>
-        <p style={{marginTop:"1rem",color:"#444",fontSize:"0.75rem",textAlign:"center"}}>Settings saved to data/settings.json</p>
+        <p style={{marginTop:"1rem",color:"#444",fontSize:"0.75rem",textAlign:"center"}}>设置已保存到后端并同步 .env（唯一数据源）</p>
       </div>
     </div>
   )

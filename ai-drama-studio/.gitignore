@@ -42,3 +42,6 @@ ComfyUI/
 */ComfyUI/
 # 大模型文件不入库(205MB,超过GitHub限制)
 backend/models/
+
+# 前端不再存设置（唯一数据源=后端 .env）
+frontend/data/

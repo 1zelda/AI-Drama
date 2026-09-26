@@ -126,10 +126,8 @@ async def health(base_url: str) -> bool:
 async def write_lyrics(theme: str, style_tags: str, duration: float,
                        language: str = "中文") -> str:
     """按 ACE-Step 歌词格式（[verse]/[chorus] 结构标签）生成歌词。"""
-    from ..llm.planner import get_client, get_model
+    from ..llm.planner import chat_completion
 
-    client = get_client()
-    model = get_model()
     prompt = f"""你是顶级作词人。为一首 {duration:.0f} 秒的 {style_tags} 风格歌曲写歌词。
 主题：{theme}
 语言：{language}
@@ -143,8 +141,9 @@ ACE-Step 歌词格式要求：用结构标签分段，如
 歌词行…
 
 按 {duration:.0f} 秒控制篇幅（约每秒 2-3 字）。只输出带结构标签的歌词本身，不要解释。"""
-    resp = await client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}], temperature=0.9)
-    return resp.choices[0].message.content or ""
+    return await chat_completion(
+        messages=[{"role": "user", "content": prompt}], temperature=0.9
+    ) or ""
 
 
 # --------------------------------------------------------------------------- #
@@ -170,9 +169,18 @@ def list_voices() -> List[Dict[str, Any]]:
     out = []
     for f in sorted(VOICE_DIR.glob("*.json")):
         try:
-            out.append(json.loads(f.read_text(encoding="utf-8")))
+            v = json.loads(f.read_text(encoding="utf-8"))
         except Exception:
             continue
+        ref = v.get("ref_audio") or ""
+        if ref and not Path(ref).exists():
+            # 换机/搬家后绝对路径失效：参考音频其实都收在库目录里，按名字找回来
+            name = v.get("name") or f.stem
+            cand = next((c for c in sorted((VOICE_DIR / "ref_audios").glob(f"{name}.*"))), None) if (VOICE_DIR / "ref_audios").exists() else None
+            if cand:
+                v["ref_audio"] = str(cand.resolve())
+                f.write_text(json.dumps(v, ensure_ascii=False, indent=2), encoding="utf-8")
+        out.append(v)
     return out
 
 

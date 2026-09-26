@@ -32,11 +32,6 @@ GENRES = [
 ]
 
 
-def _llm():
-    from ..llm.planner import get_client, get_model
-    return get_client(), get_model()
-
-
 def _gen_prompt(material: str, genre: str, mode: str, episode_count: int,
                 instruction: str, current_content: str) -> str:
     ep_spec = (
@@ -123,17 +118,15 @@ async def list_genres():
 async def generate(req: GenerateRequest):
     sid = req.session_id or uuid.uuid4().hex[:12]
     session = _load_session(sid)
-    client, model = _llm()
-
     prompt = _gen_prompt(req.material, req.genre, req.mode, req.episode_count,
                          req.instruction, req.current_content or session.get("content", ""))
     try:
-        resp = await client.chat.completions.create(
-            model=model,
+        # 走统一入口：主通道（DeepSeek）余额不足/失效时自动降级智谱免费档
+        from ..llm.planner import chat_completion
+        content = await chat_completion(
             messages=[{"role": "user", "content": prompt}],
             temperature=0.85,
-        )
-        content = resp.choices[0].message.content or ""
+        ) or ""
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"剧情生成失败：{exc}")
 
@@ -153,7 +146,6 @@ async def generate(req: GenerateRequest):
 @router.post("/chat")
 async def chat(req: ChatRequest):
     session = _load_session(req.session_id)
-    client, model = _llm()
 
     inputs = session.get("inputs", {})
     context_note = (
@@ -175,12 +167,11 @@ async def chat(req: ChatRequest):
     history.append({"role": "user", "content": req.message})
 
     try:
-        resp = await client.chat.completions.create(
-            model=model,
+        from ..llm.planner import chat_completion
+        reply = await chat_completion(
             messages=[{"role": "system", "content": system}] + history,
             temperature=0.8,
-        )
-        reply = resp.choices[0].message.content or ""
+        ) or ""
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=502, detail=f"对话失败：{exc}")
 
